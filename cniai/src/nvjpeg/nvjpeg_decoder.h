@@ -53,6 +53,9 @@ struct decode_per_thread_params {
 };
 
 
+// here have two optimization point
+// 1. support NVJPEG_BACKEND_HARDWARE. if use A100, A30, H100. I don't have money!
+// 2. cancel d2d copy, bad point is have to put in mul device ptr to be mul channel, not like put one point like right now.
 class CniaiNvjpegDecoder {
 
 public:
@@ -68,9 +71,9 @@ private:
 
     nvjpegHandle_t nvjpeg_handle_{};
 
-    std::vector<decode_per_thread_params> nvjpeg_per_thread_data_;
+    std::vector<decode_per_thread_params> nvjpeg_per_thread_data_{};
 
-    nvjpegOutputFormat_t output_format_ = NVJPEG_OUTPUT_RGBI;
+    nvjpegOutputFormat_t output_format_{};
 
 public:
     std::shared_ptr<CniaiJpeg> DecodeJpeg(std::vector<char> &src_jpeg);

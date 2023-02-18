@@ -116,7 +116,8 @@ bool pick_gpu_backend(nvjpegJpegStream_t&  jpeg_stream) {
 }
 
 
-CniaiNvjpegDecoder::CniaiNvjpegDecoder(nvjpegOutputFormat_t output_format, size_t thread_pool_count) : workers_(thread_pool_count) {
+CniaiNvjpegDecoder::CniaiNvjpegDecoder(nvjpegOutputFormat_t output_format, size_t thread_pool_count)
+    : workers_(thread_pool_count) {
     assert(thread_pool_count > 0);
 
     this->output_format_ = output_format;
@@ -126,7 +127,7 @@ CniaiNvjpegDecoder::CniaiNvjpegDecoder(nvjpegOutputFormat_t output_format, size_
     nvjpegDevAllocator_t dev_allocator = {&dev_malloc, &dev_free};
     nvjpegPinnedAllocator_t pinned_allocator ={&host_malloc, &host_free};
     CHECK_NVJPEG(nvjpegCreateEx(NVJPEG_BACKEND_DEFAULT, &dev_allocator,
-                                           &pinned_allocator,NVJPEG_FLAGS_DEFAULT,  &nvjpeg_handle_));
+                                           &pinned_allocator,NVJPEG_FLAGS_DEFAULT,  &nvjpeg_handle_))
 
     nvjpeg_per_thread_data_.resize(thread_pool_count);
 
