@@ -21,7 +21,7 @@
         nvjpegStatus_t _e = (call);                                             \
         if (_e != NVJPEG_STATUS_SUCCESS)                                        \
         {                                                                       \
-            LOG_ERROR("CUDA Runtime failure: #{}", _e);                         \
+            LOG_ERROR("NVJPEG Runtime failure: #{}", _e);                         \
             abort();                                                            \
         }                                                                       \
     }
