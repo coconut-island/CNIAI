@@ -11,6 +11,8 @@ namespace image_util {
 
 int writeBMPi(const char *filename, const unsigned char *chanRGB, int width, int height);
 
+int writeYU12(const char *filename, const unsigned char *chanYU12, int width, int height);
+
 }
 }
 

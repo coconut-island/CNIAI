@@ -259,14 +259,14 @@ std::vector<std::shared_ptr<CniaiJpeg>> CniaiNvjpegDecoder::DecodeJpegBatch(std:
             mul = 3;
         }
             // in the case of rgb create 3 buffers with sizes of original image
-        else if (output_format_ == NVJPEG_OUTPUT_RGB ||
+        if (output_format_ == NVJPEG_OUTPUT_RGB ||
                 output_format_ == NVJPEG_OUTPUT_BGR) {
             channels = 3;
             single_img_widths[1] = single_img_widths[2] = single_img_widths[0];
             single_img_heights[1] = single_img_heights[2] = single_img_heights[0];
         }
 
-        // realloc output buffer if required
+        // malloc output buffer
         for (int c = 0; c < channels; c++) {
             int aw = mul * single_img_widths[c];
             int ah = single_img_heights[c];
@@ -326,7 +326,6 @@ std::vector<std::shared_ptr<CniaiJpeg>> CniaiNvjpegDecoder::DecodeJpegBatch(std:
                              int width = img_widths[iidx];
                              int height = img_heights[iidx];
                              if (output_format == NVJPEG_OUTPUT_RGBI || output_format == NVJPEG_OUTPUT_BGRI) {
-
                                  void* rgbi_device_ptr;
                                  CHECK_CUDA(cudaMallocAsync(&rgbi_device_ptr, width * height * 3 * sizeof(uint8_t), per_thread_params.stream))
                                  cudaMemcpyAsync(rgbi_device_ptr, iout.channel[0],
@@ -356,7 +355,21 @@ std::vector<std::shared_ptr<CniaiJpeg>> CniaiNvjpegDecoder::DecodeJpegBatch(std:
                                  return cniai_jpeg;
                              }
 
-                             // TODO(ABEL) YUV and Y will impl when will use
+                             if (output_format == NVJPEG_OUTPUT_YUV) {
+                                 void* yu12_device_ptr;
+                                 CHECK_CUDA(cudaMallocAsync(&yu12_device_ptr, width * height * 3 / 2 * sizeof(uint8_t), per_thread_params.stream))
+                                 cudaMemcpyAsync(yu12_device_ptr, iout.channel[0],
+                                                 width * height * sizeof(uint8_t), cudaMemcpyDeviceToDevice, per_thread_params.stream);
+                                 cudaMemcpyAsync(static_cast<uint8_t*>(yu12_device_ptr) + width * height * sizeof(uint8_t), iout.channel[1],
+                                                 width * height / 2 / 2 * sizeof(uint8_t), cudaMemcpyDeviceToDevice, per_thread_params.stream);
+                                 cudaMemcpyAsync(static_cast<uint8_t*>(yu12_device_ptr) + width * height * sizeof(uint8_t) + width * height / 2 / 2 * sizeof(uint8_t), iout.channel[2],
+                                                 width * height / 2 / 2 * sizeof(uint8_t), cudaMemcpyDeviceToDevice, per_thread_params.stream);
+
+                                 cniai_jpeg = std::make_shared<CniaiJpeg>(yu12_device_ptr, img_widths[0], img_heights[0], output_format);
+
+                                 cudaStreamSynchronize(per_thread_params.stream);
+                                 return cniai_jpeg;
+                             }
 
                              LOG_ERROR("not support the format, return nullptr, format = {}", static_cast<int>(output_format));
 
