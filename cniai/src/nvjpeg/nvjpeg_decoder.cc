@@ -166,11 +166,9 @@ bool pick_gpu_backend(nvjpegJpegStream_t&  jpeg_stream) {
 }
 
 
-CniaiNvjpegImageDecoder::CniaiNvjpegImageDecoder(nvjpegOutputFormat_t output_format, size_t thread_pool_count)
+CniaiNvjpegImageDecoder::CniaiNvjpegImageDecoder(size_t thread_pool_count)
     : workers_(thread_pool_count) {
     assert(thread_pool_count > 0);
-
-    this->output_format_ = output_format;
 
     CHECK_CUDA(cudaStreamCreateWithFlags(&global_stream_, cudaStreamNonBlocking))
 
@@ -229,12 +227,12 @@ CniaiNvjpegImageDecoder::~CniaiNvjpegImageDecoder() {
 }
 
 
-std::shared_ptr<CniaiNvjpegImage> CniaiNvjpegImageDecoder::DecodeJpeg(const uint8_t* src_jpeg, size_t length) {
-    return DecodeJpegBatch(&src_jpeg, &length, 1)[0];
+std::shared_ptr<CniaiNvjpegImage> CniaiNvjpegImageDecoder::DecodeJpeg(const uint8_t* src_jpeg, size_t length, nvjpegOutputFormat_t output_format) {
+    return DecodeJpegBatch(&src_jpeg, &length, 1, output_format)[0];
 }
 
 
-std::vector<std::shared_ptr<CniaiNvjpegImage>> CniaiNvjpegImageDecoder::DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, const size_t image_count)  {
+std::vector<std::shared_ptr<CniaiNvjpegImage>> CniaiNvjpegImageDecoder::DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, const size_t image_count, nvjpegOutputFormat_t output_format)  {
     std::vector<int> img_widths(image_count);
     std::vector<int> img_heights(image_count);
 
@@ -301,13 +299,13 @@ std::vector<std::shared_ptr<CniaiNvjpegImage>> CniaiNvjpegImageDecoder::DecodeJp
         int mul = 1;
         // in the case of interleaved RGB output, write only to single channel, but
         // 3 samples at once
-        if (output_format_ == NVJPEG_OUTPUT_RGBI || output_format_ == NVJPEG_OUTPUT_BGRI) {
+        if (output_format == NVJPEG_OUTPUT_RGBI || output_format == NVJPEG_OUTPUT_BGRI) {
             channels = 1;
             mul = 3;
         }
             // in the case of rgb create 3 buffers with sizes of original image
-        if (output_format_ == NVJPEG_OUTPUT_RGB ||
-                output_format_ == NVJPEG_OUTPUT_BGR) {
+        if (output_format == NVJPEG_OUTPUT_RGB ||
+                output_format == NVJPEG_OUTPUT_BGR) {
             channels = 3;
             single_img_widths[1] = single_img_widths[2] = single_img_widths[0];
             single_img_heights[1] = single_img_heights[2] = single_img_heights[0];
@@ -332,7 +330,6 @@ std::vector<std::shared_ptr<CniaiNvjpegImage>> CniaiNvjpegImageDecoder::DecodeJp
     std::vector<int> buffer_indices(workers_.size(), 0);
     auto &nvjpeg_per_thread_data = nvjpeg_per_thread_data_;
     auto &nvjpeg_handle = nvjpeg_handle_;
-    auto &output_format = output_format_;
     std::vector<std::future<std::shared_ptr<CniaiNvjpegImage>>> cniai_jpeg_futures;
     cniai_jpeg_futures.resize(image_count);
     for (int i = 0; i < image_count; i++) {
