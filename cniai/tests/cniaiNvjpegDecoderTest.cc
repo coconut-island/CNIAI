@@ -42,27 +42,23 @@ int main(int argc, char *argv[]) {
     }
 
     // decode jpeg to interleaved RGB
-    cniai::CniaiNvjpegDecoder cniai_nvjpeg_rgbi_decoder(NVJPEG_OUTPUT_RGBI, 1);
-    std::shared_ptr<cniai::CniaiJpeg> decoded_rgbi_img = cniai_nvjpeg_rgbi_decoder.DecodeJpeg(jpeg_data);
+    cniai::CniaiNvjpegImageDecoder cniai_nvjpeg_rgbi_decoder(NVJPEG_OUTPUT_RGBI, 1);
+    std::shared_ptr<cniai::CniaiNvjpegImage> decoded_rgbi_img = cniai_nvjpeg_rgbi_decoder.DecodeJpeg((uint8_t*)jpeg_data.data(), file_size);
     assert(decoded_rgbi_img != nullptr);
-    const auto *d_RGBI = (const unsigned char *)decoded_rgbi_img->GetDeviceData() ;
-    int width = decoded_rgbi_img->GetWidth();
-    int height = decoded_rgbi_img->GetHeight();
-    std::vector<unsigned char> vchanRGBI(decoded_rgbi_img->size());
-    unsigned char *chanRGBI = vchanRGBI.data();
-    CHECK_CUDA(cudaMemcpy(chanRGBI, d_RGBI, decoded_rgbi_img->size(), cudaMemcpyDeviceToHost))
-    cniai::image_util::writeBMPi(FLAGS_output_rgbi_bmp_path.c_str(), chanRGBI, width, height);
+    int rgbi_width = decoded_rgbi_img->GetWidth();
+    int rgbi_height = decoded_rgbi_img->GetHeight();
+    auto rgbi_host_ptr = static_cast<const unsigned char *>(decoded_rgbi_img->GetHostDataPtr());
+    cniai::image_util::writeBMPi(FLAGS_output_rgbi_bmp_path.c_str(), rgbi_host_ptr, rgbi_width, rgbi_height);
 
 
     // decode jpeg to yu12
-    cniai::CniaiNvjpegDecoder cniai_nvjpeg_yu12_decoder(NVJPEG_OUTPUT_YUV, 1);
-    std::shared_ptr<cniai::CniaiJpeg> decoded_yu12_img = cniai_nvjpeg_yu12_decoder.DecodeJpeg(jpeg_data);
+    cniai::CniaiNvjpegImageDecoder cniai_nvjpeg_yu12_decoder(NVJPEG_OUTPUT_YUV, 1);
+    std::shared_ptr<cniai::CniaiNvjpegImage> decoded_yu12_img = cniai_nvjpeg_yu12_decoder.DecodeJpeg((uint8_t*)jpeg_data.data(), file_size);
     assert(decoded_yu12_img != nullptr);
-    const auto *d_YU12 = (const unsigned char *)decoded_yu12_img->GetDeviceData() ;
-    std::vector<unsigned char> vchanYU12(decoded_yu12_img->size());
-    unsigned char *chanYU12 = vchanYU12.data();
-    CHECK_CUDA(cudaMemcpy(chanYU12, d_YU12, decoded_yu12_img->size(), cudaMemcpyDeviceToHost))
-    cniai::image_util::writeYU12(FLAGS_output_yu12_bmp_path.c_str(), chanYU12, width, height);
+    int yu12_width = decoded_yu12_img->GetWidth();
+    int yu12_height = decoded_yu12_img->GetHeight();
+    auto yu12host_ptr = static_cast<const unsigned char *>(decoded_yu12_img->GetHostDataPtr());
+    cniai::image_util::writeYU12(FLAGS_output_yu12_bmp_path.c_str(), yu12host_ptr, yu12_width, yu12_height);
 
     gflags::ShutDownCommandLineFlags();
     return 0;

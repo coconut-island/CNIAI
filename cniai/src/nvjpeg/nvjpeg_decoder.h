@@ -17,20 +17,23 @@
 
 namespace cniai {
 
-class CniaiJpeg {
+class CniaiNvjpegImage {
 
 public:
-    CniaiJpeg() = delete;
-    CniaiJpeg(void *device_data, int width, int height, nvjpegOutputFormat_t format);
+    CniaiNvjpegImage() = default;
+    CniaiNvjpegImage(void * device_channel_ptrs[4], int width, int height, nvjpegOutputFormat_t format);
+    ~CniaiNvjpegImage();
 
 private:
-    void *device_data_ = nullptr;
+    void * device_channel_ptrs_[NVJPEG_MAX_COMPONENT]{nullptr};
+    void * host_data_ptr_ = nullptr;
     int width_{};
     int height_{};
     nvjpegOutputFormat_t format_{};
 
 public:
-    void* GetDeviceData();
+    void * GetDeviceChannelPtr(int idx);
+    void * GetHostDataPtr();
     int GetWidth() const;
     int GetHeight() const;
     nvjpegOutputFormat_t GetFormat();
@@ -55,12 +58,11 @@ struct decode_per_thread_params {
 
 // here have two optimization point
 // 1. support NVJPEG_BACKEND_HARDWARE. if use A100, A30, H100. I don't have money!
-// 2. cancel d2d copy, bad point is have to put in mul device ptr to be mul channel, not like put one point like right now.
-class CniaiNvjpegDecoder {
+class CniaiNvjpegImageDecoder {
 
 public:
-    explicit CniaiNvjpegDecoder(nvjpegOutputFormat_t output_format, size_t thread_pool_count);
-    ~CniaiNvjpegDecoder();
+    explicit CniaiNvjpegImageDecoder(nvjpegOutputFormat_t output_format, size_t thread_pool_count);
+    ~CniaiNvjpegImageDecoder();
 
 private:
     bool hw_decode_available_{}; // support in the future, if necessary
@@ -76,9 +78,9 @@ private:
     nvjpegOutputFormat_t output_format_{};
 
 public:
-    std::shared_ptr<CniaiJpeg> DecodeJpeg(std::vector<char> &src_jpeg);
+    std::shared_ptr<CniaiNvjpegImage> DecodeJpeg(const uint8_t *src_jpeg, size_t length);
 
-    std::vector<std::shared_ptr<CniaiJpeg>> DecodeJpegBatch(std::vector<std::vector<char>> &src_jpegs);
+    std::vector<std::shared_ptr<CniaiNvjpegImage>> DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, size_t image_size);
 
 private:
     static int dev_malloc(void **p, size_t s);

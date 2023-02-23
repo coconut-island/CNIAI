@@ -10,8 +10,12 @@
 namespace cniai {
 
 
-CniaiJpeg::CniaiJpeg(void *device_data, int width, int height, nvjpegOutputFormat_t format)
-    : device_data_(device_data), width_(width), height_(height) {
+CniaiNvjpegImage::CniaiNvjpegImage(void * device_channel_ptrs[NVJPEG_MAX_COMPONENT], int width, int height, nvjpegOutputFormat_t format)
+    : width_(width), height_(height) {
+
+    for (int i = 0; i < NVJPEG_MAX_COMPONENT; ++i) {
+        device_channel_ptrs_[i] = device_channel_ptrs[i];
+    }
 
     switch (format) {
         case NVJPEG_OUTPUT_RGBI:
@@ -29,23 +33,69 @@ CniaiJpeg::CniaiJpeg(void *device_data, int width, int height, nvjpegOutputForma
     }
 }
 
-void *CniaiJpeg::GetDeviceData() {
-    return device_data_;
+CniaiNvjpegImage::~CniaiNvjpegImage() {
+    for (auto &c : device_channel_ptrs_) {
+        if (c) CHECK_CUDA(cudaFree(c))
+    }
+
+    if (host_data_ptr_) {
+        CHECK_CUDA(cudaFreeHost(host_data_ptr_))
+    }
 }
 
-int CniaiJpeg::GetWidth() const {
+void* CniaiNvjpegImage::GetDeviceChannelPtr(int idx) {
+    return device_channel_ptrs_[idx];
+}
+
+void* CniaiNvjpegImage::GetHostDataPtr() {
+    if (host_data_ptr_) {
+        return host_data_ptr_;
+    }
+
+    CHECK_CUDA(cudaMallocHost(&host_data_ptr_, size()))
+
+    switch (format_) {
+        case NVJPEG_OUTPUT_RGBI:
+        case NVJPEG_OUTPUT_BGRI:
+            CHECK_CUDA(cudaMemcpy(host_data_ptr_, GetDeviceChannelPtr(0), size(), cudaMemcpyDeviceToHost))
+            break;
+        case NVJPEG_OUTPUT_RGB:
+        case NVJPEG_OUTPUT_BGR:
+            CHECK_CUDA(cudaMemcpy(host_data_ptr_,
+                                  GetDeviceChannelPtr(0),width_ * height_ * sizeof(uint8_t), cudaMemcpyDeviceToHost))
+            CHECK_CUDA(cudaMemcpy(static_cast<uint8_t*>(host_data_ptr_) + width_ * height_ * sizeof(uint8_t),
+                                  GetDeviceChannelPtr(1),width_ * height_ * sizeof(uint8_t), cudaMemcpyDeviceToHost))
+            CHECK_CUDA(cudaMemcpy(static_cast<uint8_t*>(host_data_ptr_) + width_ * height_ * sizeof(uint8_t),
+                                  GetDeviceChannelPtr(2), width_ * height_ * sizeof(uint8_t), cudaMemcpyDeviceToHost))
+            break;
+        case NVJPEG_OUTPUT_YUV:
+            CHECK_CUDA(cudaMemcpy(host_data_ptr_, GetDeviceChannelPtr(0),
+                                       width_ * height_ * sizeof(uint8_t), cudaMemcpyDeviceToHost))
+            CHECK_CUDA(cudaMemcpy(static_cast<uint8_t*>(host_data_ptr_) + width_ * height_ * sizeof(uint8_t), GetDeviceChannelPtr(1),
+                                  width_ * height_ / 4 * sizeof(uint8_t), cudaMemcpyDeviceToHost))
+            CHECK_CUDA(cudaMemcpy(static_cast<uint8_t*>(host_data_ptr_) + width_ * height_ * 5 / 4 * sizeof(uint8_t), GetDeviceChannelPtr(2),
+                                  width_ * height_ / 4 * sizeof(uint8_t), cudaMemcpyDeviceToHost))
+            break;
+        default:
+            LOG_ERROR("not support the format! format = {}", static_cast<int>(format_));
+            abort();
+    }
+    return host_data_ptr_;
+}
+
+int CniaiNvjpegImage::GetWidth() const {
     return width_;
 }
 
-int CniaiJpeg::GetHeight() const {
+int  CniaiNvjpegImage::GetHeight() const {
     return height_;
 }
 
-nvjpegOutputFormat_t CniaiJpeg::GetFormat() {
+nvjpegOutputFormat_t CniaiNvjpegImage::GetFormat() {
     return format_;
 }
 
-size_t CniaiJpeg::size() {
+size_t CniaiNvjpegImage::size() {
     switch (format_) {
         case NVJPEG_OUTPUT_RGBI:
         case NVJPEG_OUTPUT_BGRI:
@@ -63,19 +113,19 @@ size_t CniaiJpeg::size() {
 }
 
 
-int CniaiNvjpegDecoder::dev_malloc(void **p, size_t s) {
+int CniaiNvjpegImageDecoder::dev_malloc(void **p, size_t s) {
     return static_cast<int>(cudaMalloc(p, s));
 }
 
-int CniaiNvjpegDecoder::dev_free(void *p) {
+int CniaiNvjpegImageDecoder::dev_free(void *p) {
     return static_cast<int>(cudaFree(p));
 }
 
-int CniaiNvjpegDecoder::host_malloc(void** p, size_t s, unsigned int f) {
+int CniaiNvjpegImageDecoder::host_malloc(void** p, size_t s, unsigned int f) {
     return static_cast<int>(cudaHostAlloc(p, s, f));
 }
 
-int CniaiNvjpegDecoder::host_free(void* p) {
+int CniaiNvjpegImageDecoder::host_free(void* p) {
     return static_cast<int>(cudaFreeHost(p));
 }
 
@@ -116,7 +166,7 @@ bool pick_gpu_backend(nvjpegJpegStream_t&  jpeg_stream) {
 }
 
 
-CniaiNvjpegDecoder::CniaiNvjpegDecoder(nvjpegOutputFormat_t output_format, size_t thread_pool_count)
+CniaiNvjpegImageDecoder::CniaiNvjpegImageDecoder(nvjpegOutputFormat_t output_format, size_t thread_pool_count)
     : workers_(thread_pool_count) {
     assert(thread_pool_count > 0);
 
@@ -156,7 +206,7 @@ CniaiNvjpegDecoder::CniaiNvjpegDecoder(nvjpegOutputFormat_t output_format, size_
 
 }
 
-CniaiNvjpegDecoder::~CniaiNvjpegDecoder() {
+CniaiNvjpegImageDecoder::~CniaiNvjpegImageDecoder() {
     for (auto &nvjpeg_data : nvjpeg_per_thread_data_) {
         CHECK_NVJPEG(nvjpegDecodeParamsDestroy(nvjpeg_data.nvjpeg_decode_params))
 
@@ -178,28 +228,25 @@ CniaiNvjpegDecoder::~CniaiNvjpegDecoder() {
     CHECK_CUDA(cudaStreamDestroy(global_stream_))
 }
 
-std::shared_ptr<CniaiJpeg> CniaiNvjpegDecoder::DecodeJpeg(std::vector<char> &src_jpeg) {
-    auto src_jpeg_warp = std::vector<std::vector<char>>{src_jpeg};
-    auto decoded_img_warp = std::vector<std::shared_ptr<CniaiJpeg>>();
-    return DecodeJpegBatch(src_jpeg_warp)[0];
+
+std::shared_ptr<CniaiNvjpegImage> CniaiNvjpegImageDecoder::DecodeJpeg(const uint8_t* src_jpeg, size_t length) {
+    return DecodeJpegBatch(&src_jpeg, &length, 1)[0];
 }
 
 
-std::vector<std::shared_ptr<CniaiJpeg>> CniaiNvjpegDecoder::DecodeJpegBatch(std::vector<std::vector<char>> &src_jpegs)  {
-    auto src_jpeg_count = src_jpegs.size();
-    std::vector<int> img_widths(src_jpeg_count);
-    std::vector<int> img_heights(src_jpeg_count);
+std::vector<std::shared_ptr<CniaiNvjpegImage>> CniaiNvjpegImageDecoder::DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, const size_t image_count)  {
+    std::vector<int> img_widths(image_count);
+    std::vector<int> img_heights(image_count);
 
-    std::vector<std::shared_ptr<CniaiJpeg>> decoded_imgs;
-    decoded_imgs.clear();
-    decoded_imgs.resize(src_jpeg_count);
+    std::vector<std::shared_ptr<CniaiNvjpegImage>> decoded_jpeg_images;
+    decoded_jpeg_images.resize(image_count);
 
     // output buffers
-    std::vector<nvjpegImage_t> iouts(src_jpeg_count);
+    std::vector<nvjpegImage_t> iouts(image_count);
     // output buffer sizes, for convenience
-    std::vector<nvjpegImage_t> iszs(src_jpeg_count);
+    std::vector<nvjpegImage_t> iszs(image_count);
 
-    for (int i = 0; i < iouts.size(); i++) {
+    for (int i = 0; i < image_count; i++) {
         for (int c = 0; c < NVJPEG_MAX_COMPONENT; c++) {
             iouts[i].channel[c] = nullptr;
             iouts[i].pitch[c] = 0;
@@ -211,9 +258,9 @@ std::vector<std::shared_ptr<CniaiJpeg>> CniaiNvjpegDecoder::DecodeJpegBatch(std:
     int single_img_heights[NVJPEG_MAX_COMPONENT];
     int channels;
     nvjpegChromaSubsampling_t subsampling;
-    for (int i = 0; i < src_jpeg_count; ++i) {
+    for (int i = 0; i < image_count; ++i) {
         CHECK_NVJPEG(nvjpegGetImageInfo(
-                nvjpeg_handle_, (unsigned char *)src_jpegs[i].data(), src_jpegs[i].size(),
+                nvjpeg_handle_, const_cast<unsigned char *>(src_jpegs[i]), lengths[i],
                 &channels, &subsampling, single_img_widths, single_img_heights))
 
         img_widths[i] = single_img_widths[0];
@@ -249,7 +296,6 @@ std::vector<std::shared_ptr<CniaiJpeg>> CniaiNvjpegDecoder::DecodeJpegBatch(std:
             case NVJPEG_CSS_UNKNOWN:
             case NVJPEG_CSS_410V:
                 LOG_DEBUG("Unknown chroma subsampling");
-                return decoded_imgs;
         }
 
         int mul = 1;
@@ -287,17 +333,16 @@ std::vector<std::shared_ptr<CniaiJpeg>> CniaiNvjpegDecoder::DecodeJpegBatch(std:
     auto &nvjpeg_per_thread_data = nvjpeg_per_thread_data_;
     auto &nvjpeg_handle = nvjpeg_handle_;
     auto &output_format = output_format_;
-
-    std::vector<std::future<std::shared_ptr<CniaiJpeg>>> cniai_jpeg_futures;
-    cniai_jpeg_futures.resize(src_jpeg_count);
-    for (int i = 0; i < src_jpeg_count; i++) {
+    std::vector<std::future<std::shared_ptr<CniaiNvjpegImage>>> cniai_jpeg_futures;
+    cniai_jpeg_futures.resize(image_count);
+    for (int i = 0; i < image_count; i++) {
         cniai_jpeg_futures[i] = workers_.enqueue(
-                [&nvjpeg_handle, &nvjpeg_per_thread_data, &buffer_indices, &iouts, &src_jpegs, &output_format, &img_widths, &img_heights](int thread_idx, int iidx)
+                [&nvjpeg_handle, &nvjpeg_per_thread_data, &buffer_indices, &iouts, &lengths, &src_jpegs, &output_format, &img_widths, &img_heights](int thread_idx, int iidx)
                          {
                              auto& per_thread_params = nvjpeg_per_thread_data[thread_idx];
 
                              CHECK_NVJPEG(nvjpegDecodeParamsSetOutputFormat(per_thread_params.nvjpeg_decode_params, output_format))
-                             CHECK_NVJPEG(nvjpegJpegStreamParse(nvjpeg_handle, (const unsigned char *)src_jpegs[iidx].data(), src_jpegs[iidx].size(),
+                             CHECK_NVJPEG(nvjpegJpegStreamParse(nvjpeg_handle, src_jpegs[iidx], lengths[iidx],
                                                                 0, 0, per_thread_params.jpeg_streams[buffer_indices[thread_idx]]))
                              bool use_gpu_backend = pick_gpu_backend(per_thread_params.jpeg_streams[buffer_indices[thread_idx]]);
 
@@ -321,74 +366,24 @@ std::vector<std::shared_ptr<CniaiJpeg>> CniaiNvjpegDecoder::DecodeJpegBatch(std:
                              // switch pinned buffer in pipeline mode to avoid an extra sync
                              buffer_indices[thread_idx] = (buffer_indices[thread_idx] + 1) % pipeline_stages;
 
-                             std::shared_ptr<CniaiJpeg> cniai_jpeg = nullptr;
+                             CHECK_CUDA(cudaStreamSynchronize(per_thread_params.stream))
 
-                             auto &iout = iouts[iidx];
+
+                             auto iout = iouts[iidx];
                              int width = img_widths[iidx];
                              int height = img_heights[iidx];
-                             if (output_format == NVJPEG_OUTPUT_RGBI || output_format == NVJPEG_OUTPUT_BGRI) {
-                                 void* rgbi_device_ptr;
-                                 CHECK_CUDA(cudaMallocAsync(&rgbi_device_ptr, width * height * 3 * sizeof(uint8_t), per_thread_params.stream))
-                                 cudaMemcpyAsync(rgbi_device_ptr, iout.channel[0],
-                                                 width * height * 3 * sizeof(uint8_t), cudaMemcpyDeviceToDevice, per_thread_params.stream);
 
-                                 cniai_jpeg = std::make_shared<CniaiJpeg>(rgbi_device_ptr, img_widths[0], img_heights[0], output_format);
-
-                                 cudaStreamSynchronize(per_thread_params.stream);
-                                 return cniai_jpeg;
-                             }
-
-                             if (output_format == NVJPEG_OUTPUT_RGB || output_format == NVJPEG_OUTPUT_BGR) {
-                                 void* rgb_device_ptr;
-                                 CHECK_CUDA(cudaMallocAsync(&rgb_device_ptr, width * height * 3 * sizeof(uint8_t), per_thread_params.stream))
-
-                                 cudaMemcpyAsync(rgb_device_ptr, iout.channel[0],
-                                                 width * height * sizeof(uint8_t), cudaMemcpyDeviceToDevice, per_thread_params.stream);
-                                 cudaMemcpyAsync(static_cast<uint8_t*>(rgb_device_ptr) + width * height * sizeof(uint8_t), iout.channel[1],
-                                                 width * height * sizeof(uint8_t), cudaMemcpyDeviceToDevice, per_thread_params.stream);
-                                 cudaMemcpyAsync(static_cast<uint8_t*>(rgb_device_ptr) + width * height * sizeof(uint8_t) * 2, iout.channel[2],
-                                                 width * height * sizeof(uint8_t), cudaMemcpyDeviceToDevice, per_thread_params.stream);
-
-                                 cniai_jpeg = std::make_shared<CniaiJpeg>(
-                                         rgb_device_ptr, width, height, output_format);
-
-                                 cudaStreamSynchronize(per_thread_params.stream);
-                                 return cniai_jpeg;
-                             }
-
-                             if (output_format == NVJPEG_OUTPUT_YUV) {
-                                 void* yu12_device_ptr;
-                                 CHECK_CUDA(cudaMallocAsync(&yu12_device_ptr, width * height * 3 / 2 * sizeof(uint8_t), per_thread_params.stream))
-                                 cudaMemcpyAsync(yu12_device_ptr, iout.channel[0],
-                                                 width * height * sizeof(uint8_t), cudaMemcpyDeviceToDevice, per_thread_params.stream);
-                                 cudaMemcpyAsync(static_cast<uint8_t*>(yu12_device_ptr) + width * height * sizeof(uint8_t), iout.channel[1],
-                                                 width * height / 2 / 2 * sizeof(uint8_t), cudaMemcpyDeviceToDevice, per_thread_params.stream);
-                                 cudaMemcpyAsync(static_cast<uint8_t*>(yu12_device_ptr) + width * height * sizeof(uint8_t) + width * height / 2 / 2 * sizeof(uint8_t), iout.channel[2],
-                                                 width * height / 2 / 2 * sizeof(uint8_t), cudaMemcpyDeviceToDevice, per_thread_params.stream);
-
-                                 cniai_jpeg = std::make_shared<CniaiJpeg>(yu12_device_ptr, img_widths[0], img_heights[0], output_format);
-
-                                 cudaStreamSynchronize(per_thread_params.stream);
-                                 return cniai_jpeg;
-                             }
-
-                             LOG_ERROR("not support the format, return nullptr, format = {}", static_cast<int>(output_format));
-
-                             return cniai_jpeg;
+                             return std::make_shared<CniaiNvjpegImage>(reinterpret_cast<void **>(iout.channel), width, height, output_format);
                          }, i);
     }
 
-    for (int i = 0; i < cniai_jpeg_futures.size(); ++i) {
-        decoded_imgs[i] = cniai_jpeg_futures[i].get();
+    for (int i = 0; i < image_count; ++i) {
+        decoded_jpeg_images[i] = cniai_jpeg_futures[i].get();
     }
+
     cudaStreamSynchronize(global_stream_);
 
-    for (auto & iout : iouts) {
-        for (auto &c : iout.channel)
-            if (c) CHECK_CUDA(cudaFree(c))
-    }
-
-    return decoded_imgs;
+    return decoded_jpeg_images;
 }
 
 
