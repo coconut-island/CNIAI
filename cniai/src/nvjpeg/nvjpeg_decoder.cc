@@ -113,19 +113,19 @@ size_t CniaiNvjpegImage::size() {
 }
 
 
-int CniaiNvjpegImageDecoder::dev_malloc(void **p, size_t s) {
+int CniaiNvjpegDecoder::dev_malloc(void **p, size_t s) {
     return static_cast<int>(cudaMalloc(p, s));
 }
 
-int CniaiNvjpegImageDecoder::dev_free(void *p) {
+int CniaiNvjpegDecoder::dev_free(void *p) {
     return static_cast<int>(cudaFree(p));
 }
 
-int CniaiNvjpegImageDecoder::host_malloc(void** p, size_t s, unsigned int f) {
+int CniaiNvjpegDecoder::host_malloc(void** p, size_t s, unsigned int f) {
     return static_cast<int>(cudaHostAlloc(p, s, f));
 }
 
-int CniaiNvjpegImageDecoder::host_free(void* p) {
+int CniaiNvjpegDecoder::host_free(void* p) {
     return static_cast<int>(cudaFreeHost(p));
 }
 
@@ -166,7 +166,7 @@ bool pick_gpu_backend(nvjpegJpegStream_t&  jpeg_stream) {
 }
 
 
-CniaiNvjpegImageDecoder::CniaiNvjpegImageDecoder(size_t thread_pool_count)
+CniaiNvjpegDecoder::CniaiNvjpegDecoder(size_t thread_pool_count)
     : workers_(thread_pool_count) {
     assert(thread_pool_count > 0);
 
@@ -204,7 +204,7 @@ CniaiNvjpegImageDecoder::CniaiNvjpegImageDecoder(size_t thread_pool_count)
 
 }
 
-CniaiNvjpegImageDecoder::~CniaiNvjpegImageDecoder() {
+CniaiNvjpegDecoder::~CniaiNvjpegDecoder() {
     for (auto &nvjpeg_data : nvjpeg_per_thread_data_) {
         CHECK_NVJPEG(nvjpegDecodeParamsDestroy(nvjpeg_data.nvjpeg_decode_params))
 
@@ -227,12 +227,12 @@ CniaiNvjpegImageDecoder::~CniaiNvjpegImageDecoder() {
 }
 
 
-std::shared_ptr<CniaiNvjpegImage> CniaiNvjpegImageDecoder::DecodeJpeg(const uint8_t* src_jpeg, size_t length, nvjpegOutputFormat_t output_format) {
+std::shared_ptr<CniaiNvjpegImage> CniaiNvjpegDecoder::DecodeJpeg(const uint8_t* src_jpeg, size_t length, nvjpegOutputFormat_t output_format) {
     return DecodeJpegBatch(&src_jpeg, &length, 1, output_format)[0];
 }
 
 
-std::vector<std::shared_ptr<CniaiNvjpegImage>> CniaiNvjpegImageDecoder::DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, const size_t image_count, nvjpegOutputFormat_t output_format)  {
+std::vector<std::shared_ptr<CniaiNvjpegImage>> CniaiNvjpegDecoder::DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, const size_t image_count, nvjpegOutputFormat_t output_format)  {
     std::vector<int> img_widths(image_count);
     std::vector<int> img_heights(image_count);
 

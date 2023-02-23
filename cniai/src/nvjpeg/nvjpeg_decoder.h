@@ -58,11 +58,11 @@ struct decode_per_thread_params {
 
 // here have two optimization point
 // 1. support NVJPEG_BACKEND_HARDWARE. if use A100, A30, H100. I don't have money!
-class CniaiNvjpegImageDecoder {
+class CniaiNvjpegDecoder {
 
 public:
-    explicit CniaiNvjpegImageDecoder(size_t thread_pool_count);
-    ~CniaiNvjpegImageDecoder();
+    explicit CniaiNvjpegDecoder(size_t thread_pool_count);
+    ~CniaiNvjpegDecoder();
 
 private:
     bool hw_decode_available_{}; // support in the future, if necessary

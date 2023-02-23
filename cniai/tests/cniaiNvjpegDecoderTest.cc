@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     }
 
     // decode jpeg to interleaved RGB
-    cniai::CniaiNvjpegImageDecoder cniai_nvjpeg_image_decoder(1);
+    cniai::CniaiNvjpegDecoder cniai_nvjpeg_image_decoder(1);
     std::shared_ptr<cniai::CniaiNvjpegImage> decoded_rgbi_img = cniai_nvjpeg_image_decoder.DecodeJpeg((uint8_t*)jpeg_data.data(), file_size, NVJPEG_OUTPUT_RGBI);
     assert(decoded_rgbi_img != nullptr);
     int rgbi_width = decoded_rgbi_img->GetWidth();
