@@ -23,44 +23,7 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src/common SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src/nvjpeg SRCS)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src/util SRCS)
 
-
-set(CNIAI_INSTALL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/install)
-
-find_package(gflags PATHS ${CNIAI_INSTALL_DIR} NO_DEFAULT_PATH)
-if (gflags_FOUND)
-    message(STATUS "GFLAGS FOUND")
-    message(STATUS "GFLAGS DIR: ${gflags_DIR}")
-    message(STATUS "GFLAGS VERSION: ${gflags_VERSION}")
-else ()
-    message(STATUS "GFLAGS NOT FOUND, WILL BUILD")
-    execute_process(COMMAND bash build.sh gflags WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty)
-    find_package(gflags PATHS ${CNIAI_INSTALL_DIR} NO_DEFAULT_PATH REQUIRED)
-endif ()
-
-
-find_package(spdlog PATHS ${CNIAI_INSTALL_DIR} NO_DEFAULT_PATH)
-if (spdlog_FOUND)
-    message(STATUS "SPDLOG FOUND")
-    message(STATUS "SPDLOG DIR: ${spdlog_DIR}")
-    message(STATUS "SPDLOG VERSION: ${spdlog_VERSION}")
-else ()
-    message(STATUS "SPDLOG NOT FOUND, WILL BUILD")
-    execute_process(COMMAND bash build.sh spdlog WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty)
-    find_package(spdlog PATHS ${CNIAI_INSTALL_DIR} NO_DEFAULT_PATH REQUIRED)
-endif ()
-
-
-find_package(CniaiCudaKernel PATHS ${CNIAI_INSTALL_DIR} NO_DEFAULT_PATH)
-if (CniaiCudaKernel_FOUND)
-    message(STATUS "CNIAI_CUDA_KERNEL FOUND")
-    message(STATUS "CNIAI_CUDA_KERNEL DIR: ${CniaiCudaKernel_DIR}")
-    message(STATUS "CNIAI_CUDA_KERNEL VERSION: ${CniaiCudaKernel_VERSION}")
-else ()
-    message(STATUS "CNIAI_CUDA_KERNEL NOT FOUND, WILL BUILD")
-    execute_process(COMMAND bash build.sh WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cniai_cuda_kernel)
-    find_package(CniaiCudaKernel PATHS ${CNIAI_INSTALL_DIR} NO_DEFAULT_PATH REQUIRED)
-endif ()
-
+include(cmake/install_dependencies.cmake)
 
 add_executable(cniai src/cniai.cc ${SRCS})
 target_link_libraries(cniai PRIVATE ${CUDA_LIBS} ${TENSORRT_LIBS} ${GFLAGS_LIBRARIES})
