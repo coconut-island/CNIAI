@@ -50,5 +50,17 @@ else ()
 endif ()
 
 
+find_package(CniaiCudaKernel PATHS ${CNIAI_INSTALL_DIR} NO_DEFAULT_PATH)
+if (CniaiCudaKernel_FOUND)
+    message(STATUS "CNIAI_CUDA_KERNEL FOUND")
+    message(STATUS "CNIAI_CUDA_KERNEL DIR: ${CniaiCudaKernel_DIR}")
+    message(STATUS "CNIAI_CUDA_KERNEL VERSION: ${CniaiCudaKernel_VERSION}")
+else ()
+    message(STATUS "CNIAI_CUDA_KERNEL NOT FOUND, WILL BUILD")
+    execute_process(COMMAND bash build.sh WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/cniai_cuda_kernel)
+    find_package(CniaiCudaKernel PATHS ${CNIAI_INSTALL_DIR} NO_DEFAULT_PATH REQUIRED)
+endif ()
+
+
 add_executable(cniai src/cniai.cc ${SRCS})
 target_link_libraries(cniai PRIVATE ${CUDA_LIBS} ${TENSORRT_LIBS} ${GFLAGS_LIBRARIES})
