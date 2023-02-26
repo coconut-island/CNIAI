@@ -9,7 +9,7 @@ namespace cniai {
 namespace preprocess {
 
 
-template<int c = 3>
+template<int c = 3, bool is_output_planar>
 __global__ void rgb_resize_bilinear_kernel(const uint8_t *src, uint8_t *dst,
                                 const int src_width, const int src_height,
                                 const int dst_width, const int dst_height,
@@ -45,7 +45,12 @@ __global__ void rgb_resize_bilinear_kernel(const uint8_t *src, uint8_t *dst,
         src_reg = src[y2_read * src_width * c + x2_read * c + c_idx];
         out = out + src_reg * ((src_x - x1) * (src_y - y1));
 
-        dst[dst_y * dst_width * c + dst_x * c + c_idx] = out;
+        if (is_output_planar) {
+            dst[dst_width * dst_height * c_idx + dst_y * dst_width + dst_x] = out;
+        } else {
+            dst[dst_y * dst_width * c + dst_x * c + c_idx] = out;
+        }
+
     }
 }
 
@@ -58,7 +63,19 @@ void rgb_resize_bilinear(const uint8_t *src, uint8_t *dst,
     float scale_x = static_cast<float>(src_width) / dst_width;
     float scale_y = static_cast<float>(src_height) / dst_height;
 
-    rgb_resize_bilinear_kernel<3><<<grid, block, 0, cudaStream>>>(src, dst, src_width, src_height, dst_width, dst_height, scale_x, scale_y);
+    rgb_resize_bilinear_kernel<3, false><<<grid, block, 0, cudaStream>>>(src, dst, src_width, src_height, dst_width, dst_height, scale_x, scale_y);
+}
+
+void rgb_resize_bilinear_output_planar(const uint8_t *src, uint8_t *dst,
+                         int src_width, int src_height,
+                         int dst_width, int dst_height, cudaStream_t cudaStream) {
+
+    dim3 block(32, 32);
+    dim3 grid((dst_width + block.x - 1) / block.x, (dst_height + block.y - 1) / block.y);
+    float scale_x = static_cast<float>(src_width) / dst_width;
+    float scale_y = static_cast<float>(src_height) / dst_height;
+
+    rgb_resize_bilinear_kernel<3, true><<<grid, block, 0, cudaStream>>>(src, dst, src_width, src_height, dst_width, dst_height, scale_x, scale_y);
 }
 
 }}

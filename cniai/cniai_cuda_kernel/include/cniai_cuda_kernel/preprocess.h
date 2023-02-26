@@ -17,6 +17,10 @@ void rgb_resize_bilinear(const uint8_t *src, uint8_t *dst,
                          const int src_width, const int src_height,
                          const int dst_width, const int dst_height, cudaStream_t cudaStream);
 
+void rgb_resize_bilinear_output_planar(const uint8_t *src, uint8_t *dst,
+                                        int src_width, int src_height,
+                                        int dst_width, int dst_height, cudaStream_t cudaStream);
+
 }
 }
 
