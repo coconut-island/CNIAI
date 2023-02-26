@@ -10,7 +10,7 @@
 namespace cniai {
 namespace preprocess {
 
-void rgb_packed_to_planar(const char* src, char* dst, int width, int height, cudaStream_t cudaStream);
+void rgb_packed_planar_swap(const char* src, char* dst, int width, int height, cudaStream_t cudaStream);
 
 }
 }
