@@ -55,6 +55,7 @@ __global__ void rgb_resize_bilinear_kernel(const uint8_t *src, uint8_t *dst,
     }
 }
 
+
 void rgb_resize_bilinear(const uint8_t *src, uint8_t *dst,
                          int src_width, int src_height,
                          int dst_width, int dst_height, cudaStream_t cudaStream) {
@@ -66,6 +67,7 @@ void rgb_resize_bilinear(const uint8_t *src, uint8_t *dst,
 
     rgb_resize_bilinear_kernel<3, false><<<grid, block, 0, cudaStream>>>(src, dst, src_width, src_height, dst_width, dst_height, scale_x, scale_y);
 }
+
 
 void rgb_resize_bilinear_output_planar(const uint8_t *src, uint8_t *dst,
                          int src_width, int src_height,
@@ -132,6 +134,7 @@ __global__ void rgb_resize_bilinear_pad_kernel(const uint8_t *src, uint8_t *dst,
 
     }
 }
+
 
 void rgb_resize_bilinear_pad(const uint8_t *src, uint8_t *dst,
                                     const int src_width, const int src_height,
