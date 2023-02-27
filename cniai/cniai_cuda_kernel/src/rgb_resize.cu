@@ -46,11 +46,11 @@ __global__ void rgb_resize_bilinear_kernel(const uint8_t *src, uint8_t *dst,
         src_reg = src[y2_read * src_width * c + x2_read * c + c_idx];
         out = out + src_reg * ((src_x - x1) * (src_y - y1));
 
-        if (is_output_planar) {
-            dst[dst_width * dst_height * c_idx + dst_y * dst_width + dst_x] = out;
-        } else {
-            dst[dst_y * dst_width * c + dst_x * c + c_idx] = out;
-        }
+        int dst_current_idx = is_output_planar ?
+                              dst_width * dst_height * c_idx + dst_y * dst_width + dst_x :
+                              dst_y * dst_width * c + dst_x * c + c_idx;
+
+        dst[dst_current_idx] = out;
 
     }
 }
