@@ -35,6 +35,26 @@ void rgb_resize_bilinear_pad_output_planar(const uint8_t *src, uint8_t *dst,
                                                   const int img_x, const int img_y,
                                                   const int pad0, const int pad1, const int pad2, cudaStream_t cudaStream);
 
+void rgb_resize_bilinear_pad_norm(const uint8_t *src, float *dst,
+                                  const int src_width, const int src_height,
+                                  const int img_width, const int img_height,
+                                  const int dst_width, const int dst_height,
+                                  const int img_x, const int img_y,
+                                  const int pad0, const int pad1, const int pad2,
+                                  float scale,
+                                  float mean0, float mean1, float mean2,
+                                  float std0, float std1, float std2, cudaStream_t cudaStream);
+
+void rgb_resize_bilinear_pad_norm_output_planar(const uint8_t *src, float *dst,
+                                                const int src_width, const int src_height,
+                                                const int img_width, const int img_height,
+                                                const int dst_width, const int dst_height,
+                                                const int img_x, const int img_y,
+                                                const int pad0, const int pad1, const int pad2,
+                                                float scale,
+                                                float mean0, float mean1, float mean2,
+                                                float std0, float std1, float std2, cudaStream_t cudaStream);
+
 }
 }
 
