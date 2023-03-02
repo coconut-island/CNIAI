@@ -43,6 +43,7 @@ int main(int argc, char *argv[]) {
 
     // decode jpeg to interleaved RGB
     cniai::CniaiNvjpegDecoder cniai_nvjpeg_image_decoder(1);
+    cniai_nvjpeg_image_decoder.SetDefaultOutputFormat(NVJPEG_OUTPUT_YUV);
     std::shared_ptr<cniai::CniaiNvjpegImage> decoded_rgbi_img = cniai_nvjpeg_image_decoder.DecodeJpeg((uint8_t*)jpeg_data.data(), file_size, NVJPEG_OUTPUT_RGBI);
     assert(decoded_rgbi_img != nullptr);
     int rgbi_width = decoded_rgbi_img->GetWidth();
@@ -52,7 +53,7 @@ int main(int argc, char *argv[]) {
 
 
     // decode jpeg to yu12
-    std::shared_ptr<cniai::CniaiNvjpegImage> decoded_yu12_img = cniai_nvjpeg_image_decoder.DecodeJpeg((uint8_t*)jpeg_data.data(), file_size, NVJPEG_OUTPUT_YUV);
+    std::shared_ptr<cniai::CniaiNvjpegImage> decoded_yu12_img = cniai_nvjpeg_image_decoder.DecodeJpeg((uint8_t*)jpeg_data.data(), file_size);
     assert(decoded_yu12_img != nullptr);
     int yu12_width = decoded_yu12_img->GetWidth();
     int yu12_height = decoded_yu12_img->GetHeight();

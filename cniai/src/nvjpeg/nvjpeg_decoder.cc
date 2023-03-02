@@ -227,8 +227,18 @@ CniaiNvjpegDecoder::~CniaiNvjpegDecoder() {
 }
 
 
+std::shared_ptr<CniaiNvjpegImage> CniaiNvjpegDecoder::DecodeJpeg(const uint8_t* src_jpeg, size_t length) {
+    return DecodeJpegBatch(&src_jpeg, &length, 1, default_output_format_)[0];
+}
+
+
 std::shared_ptr<CniaiNvjpegImage> CniaiNvjpegDecoder::DecodeJpeg(const uint8_t* src_jpeg, size_t length, nvjpegOutputFormat_t output_format) {
     return DecodeJpegBatch(&src_jpeg, &length, 1, output_format)[0];
+}
+
+
+std::vector<std::shared_ptr<CniaiNvjpegImage>> CniaiNvjpegDecoder::DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, size_t image_count) {
+    DecodeJpegBatch(src_jpegs, lengths, image_count, default_output_format_);
 }
 
 
@@ -381,6 +391,11 @@ std::vector<std::shared_ptr<CniaiNvjpegImage>> CniaiNvjpegDecoder::DecodeJpegBat
     cudaStreamSynchronize(global_stream_);
 
     return decoded_jpeg_images;
+}
+
+
+void CniaiNvjpegDecoder::SetDefaultOutputFormat(nvjpegOutputFormat_t output_format) {
+    default_output_format_ = output_format;
 }
 
 

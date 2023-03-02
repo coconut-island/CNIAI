@@ -75,10 +75,18 @@ private:
 
     std::vector<decode_per_thread_params> nvjpeg_per_thread_data_{};
 
+    nvjpegOutputFormat_t default_output_format_ = NVJPEG_OUTPUT_RGBI;
+
 public:
+    std::shared_ptr<CniaiNvjpegImage> DecodeJpeg(const uint8_t* src_jpeg, size_t length);
+
     std::shared_ptr<CniaiNvjpegImage> DecodeJpeg(const uint8_t *src_jpeg, size_t length, nvjpegOutputFormat_t output_format);
 
-    std::vector<std::shared_ptr<CniaiNvjpegImage>> DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, size_t image_size, nvjpegOutputFormat_t output_format);
+    std::vector<std::shared_ptr<CniaiNvjpegImage>> DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, size_t image_count);
+
+    std::vector<std::shared_ptr<CniaiNvjpegImage>> DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, size_t image_count, nvjpegOutputFormat_t output_format);
+
+    void SetDefaultOutputFormat(nvjpegOutputFormat_t output_format);
 
 private:
     static int dev_malloc(void **p, size_t s);
