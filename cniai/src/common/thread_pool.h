@@ -14,12 +14,12 @@
 namespace cniai {
 
 class ThreadPool {
+
 public:
     explicit ThreadPool(size_t);
     template<class F, class... Args>
     auto enqueue(F&& f, Args&&... args)
-    -> std::future<typename std::result_of<F(size_t, Args...)>::type>
-    {
+    -> std::future<typename std::result_of<F(size_t, Args...)>::type> {
 
         using return_type = typename std::result_of<F(size_t, Args...)>::type;
 
@@ -40,17 +40,17 @@ public:
         condition.notify_one();
         return res;
     }
-    size_t size()
-    {
+
+    size_t size() {
         return workers.size();
     }
-    void wait()
-    {
+
+    void wait() {
         std::unique_lock<std::mutex> lock(this->queue_mutex);
         completed.wait(lock, [this]{return this->in_flight == 0 && this->tasks.empty();});
     }
-    ~ThreadPool()
-    {
+
+    ~ThreadPool() {
         {
             std::unique_lock<std::mutex> lock(queue_mutex);
             stop = true;
@@ -59,11 +59,12 @@ public:
         for (std::thread &worker: workers)
             worker.join();
     }
+
 private:
     // need to keep track of threads so we can join them
     std::vector< std::thread > workers;
     // the task queue
-    std::queue< std::function<void(size_t)> > tasks;
+    std::queue< std::function<void(size_t)>> tasks;
 
     // synchronization
     std::mutex queue_mutex;
@@ -75,15 +76,13 @@ private:
 
 // the constructor just launches some amount of workers
 inline ThreadPool::ThreadPool(size_t threads)
-        :   stop(false), in_flight(0), workers(threads)
-{
+        : stop(false), in_flight(0), workers(threads) {
     if (threads <= 0) return;
     for (size_t i = 0; i < threads; ++i)
         workers[i] = std::thread(
                 [this, i]
                 {
-                    for(;;)
-                    {
+                    for(;;) {
                         std::function<void(size_t)> task;
 
                         {
@@ -96,6 +95,7 @@ inline ThreadPool::ThreadPool(size_t threads)
                             this->tasks.pop();
                             in_flight++;
                         }
+
                         task(i);
                         std::unique_lock<std::mutex> lock(this->queue_mutex);
                         in_flight--;
@@ -105,6 +105,7 @@ inline ThreadPool::ThreadPool(size_t threads)
                 }
         );
 }
+
 
 }
 

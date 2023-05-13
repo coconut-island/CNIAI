@@ -11,10 +11,12 @@
 namespace cniai {
 namespace file_util {
 
-std::ifstream::pos_type filesize(const char* filename) {
-    std::ifstream in(filename, std::ifstream::ate | std::ifstream::binary);
+
+std::ifstream::pos_type fileSize(const char* fileName) {
+    std::ifstream in(fileName, std::ifstream::ate | std::ifstream::binary);
     return in.tellg();
 }
+
 
 }
 }

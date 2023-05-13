@@ -10,7 +10,8 @@
 namespace cniai {
 namespace image_util {
 
-int writeBMPi(const char *filename, const unsigned char *chanRGB, int width, int height) {
+
+int writeBMPi(const char *fileName, const unsigned char *chanRGB, int width, int height) {
     unsigned int headers[13];
     FILE *outfile;
     int extra_bytes;
@@ -49,8 +50,8 @@ int writeBMPi(const char *filename, const unsigned char *chanRGB, int width, int
     headers[11] = 0;          // biClrUsed
     headers[12] = 0;          // biClrImportant
 
-    if (!(outfile = fopen(filename, "wb"))) {
-        std::cerr << "Cannot open file: " << filename << std::endl;
+    if (!(outfile = fopen(fileName, "wb"))) {
+        std::cerr << "Cannot open file: " << fileName << std::endl;
         return 1;
     }
 
@@ -118,7 +119,8 @@ int writeBMPi(const char *filename, const unsigned char *chanRGB, int width, int
     return 0;
 }
 
-int writeYU12(const char *filename, const unsigned char *chanYU12, int width, int height) {
+
+int writeYU12(const char *fileName, const unsigned char *chanYU12, int width, int height) {
     unsigned int headers[13];
     FILE *outfile;
     int extra_bytes;
@@ -158,8 +160,8 @@ int writeYU12(const char *filename, const unsigned char *chanYU12, int width, in
     headers[11] = 0;          // biClrUsed
     headers[12] = 0;          // biClrImportant
 
-    if (!(outfile = fopen(filename, "wb"))) {
-        std::cerr << "Cannot open file: " << filename << std::endl;
+    if (!(outfile = fopen(fileName, "wb"))) {
+        std::cerr << "Cannot open file: " << fileName << std::endl;
         return 1;
     }
 
@@ -229,6 +231,7 @@ int writeYU12(const char *filename, const unsigned char *chanYU12, int width, in
     fclose(outfile);
     return 0;
 }
+
 
 }
 }

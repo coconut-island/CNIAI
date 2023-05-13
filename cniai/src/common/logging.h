@@ -6,9 +6,11 @@
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
+
 #include "spdlog/spdlog.h"
 
 #include <iostream>
+
 
 #define LOG_TRACE(...) SPDLOG_TRACE(__VA_ARGS__)
 #define LOG_DEBUG(...) SPDLOG_DEBUG(__VA_ARGS__)
@@ -20,40 +22,43 @@
 #define SET_LOG_LEVEL(level) spdlog::set_level(cniai::getLogLevelEnumFromName(level))
 #define SET_LOG_PATTERN(pattern) spdlog::set_pattern(pattern)
 
+
 namespace cniai {
 
-inline spdlog::level::level_enum getLogLevelEnumFromName(const std::string &level_name){
-    if ("trace" == level_name) {
+
+inline spdlog::level::level_enum getLogLevelEnumFromName(const std::string &levelName){
+    if ("trace" == levelName) {
         return spdlog::level::level_enum::trace;
     }
 
-    if ("debug" == level_name) {
+    if ("debug" == levelName) {
         return spdlog::level::level_enum::debug;
     }
 
-    if ("info" == level_name) {
+    if ("info" == levelName) {
         return spdlog::level::level_enum::info;
     }
 
-    if ("warn" == level_name) {
+    if ("warn" == levelName) {
         return spdlog::level::level_enum::warn;
     }
 
-    if ("err" == level_name || "error" == level_name) {
+    if ("err" == levelName || "error" == levelName) {
         return spdlog::level::level_enum::err;
     }
 
-    if ("critical" == level_name) {
+    if ("critical" == levelName) {
         return spdlog::level::level_enum::critical;
     }
 
-    if ("off" == level_name) {
+    if ("off" == levelName) {
         return spdlog::level::level_enum::off;
     }
 
-    std::cerr << "not match any log levels, level name = " << level_name << std::endl;
+    std::cerr << "not match any log levels, level name = " << levelName << std::endl;
     abort();
 }
+
 
 }
 

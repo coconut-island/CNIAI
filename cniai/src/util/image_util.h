@@ -9,11 +9,14 @@
 namespace cniai {
 namespace image_util {
 
-int writeBMPi(const char *filename, const unsigned char *chanRGB, int width, int height);
 
-int writeYU12(const char *filename, const unsigned char *chanYU12, int width, int height);
+int writeBMPi(const char *fileName, const unsigned char *chanRGB, int width, int height);
+
+int writeYU12(const char *fileName, const unsigned char *chanYU12, int width, int height);
+
 
 }
 }
+
 
 #endif //CNIAI_IMAGE_UTIL_H

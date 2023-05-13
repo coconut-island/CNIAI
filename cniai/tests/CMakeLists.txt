@@ -26,17 +26,14 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/../src/util UTIL_SRC)
 
 include(../cmake/install_dependencies.cmake)
 
-add_executable(cniaiNvjpegDecoderTest cniaiNvjpegDecoderTest.cc ${NVJPEG_SRC} ${COMMON_SRC} ${UTIL_SRC})
-target_link_libraries(cniaiNvjpegDecoderTest ${CUDA_LIBS} ${GFLAGS_LIBRARIES})
+add_executable(test_nvjpeg_decoder test_nvjpeg_decoder.cc ${NVJPEG_SRC} ${COMMON_SRC} ${UTIL_SRC})
+target_link_libraries(test_nvjpeg_decoder ${CUDA_LIBS} ${GFLAGS_LIBRARIES})
 
-add_executable(threadPoolTest threadPoolTest.cc ${COMMON_SRC})
-target_link_libraries(threadPoolTest pthread)
+add_executable(test_thread_pool test_thread_pool.cc ${COMMON_SRC})
+target_link_libraries(test_thread_pool pthread)
 
-add_executable(logTest logTest.cc ${COMMON_SRC})
-target_link_libraries(logTest ${GFLAGS_LIBRARIES})
+add_executable(test_log test_log.cc ${COMMON_SRC})
+target_link_libraries(test_log ${GFLAGS_LIBRARIES})
 
-add_executable(tensorrtTest tensorrtTest.cc ${COMMON_SRC} ${NVJPEG_SRC})
-target_link_libraries(tensorrtTest ${GFLAGS_LIBRARIES} ${CUDA_LIBS} ${TENSORRT_LIBS})
-
-add_executable(cudaKernelRgbPackedPlanarSwapTest cuda_kernel/cudaKernelRgbPackedPlanarSwapTest.cc)
-target_link_libraries(cudaKernelRgbPackedPlanarSwapTest ${CUDA_LIBS} cniai_cuda_kernel)
+add_executable(test_cuda_kernel_rgb_packed_planar_swap test_cuda_kernel_rgb_packed_planar_swap.cc)
+target_link_libraries(test_cuda_kernel_rgb_packed_planar_swap ${CUDA_LIBS} cniai_cuda_kernel)

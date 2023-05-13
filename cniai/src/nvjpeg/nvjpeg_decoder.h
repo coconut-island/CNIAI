@@ -13,91 +13,71 @@
 #include "common/logging.h"
 #include "common/thread_pool.h"
 
+#include "nvjpeg_image.h"
 
 
 namespace cniai {
 
-class CniaiNvjpegImage {
 
-public:
-    CniaiNvjpegImage() = default;
-    CniaiNvjpegImage(void * device_channel_ptrs[4], int width, int height, nvjpegOutputFormat_t format);
-    ~CniaiNvjpegImage();
-
-private:
-    void * device_channel_ptrs_[NVJPEG_MAX_COMPONENT]{nullptr};
-    void * host_data_ptr_ = nullptr;
-    int width_{};
-    int height_{};
-    nvjpegOutputFormat_t format_{};
-
-public:
-    void * GetDeviceChannelPtr(int idx);
-    void * GetHostDataPtr();
-    int GetWidth() const;
-    int GetHeight() const;
-    nvjpegOutputFormat_t GetFormat();
-    size_t size();
-};
+constexpr int PIPELINE_STAGES = 2;
 
 
-constexpr int pipeline_stages = 2;
-
-struct decode_per_thread_params {
+struct DecodePerThreadParams {
     cudaStream_t stream;
-    nvjpegJpegState_t dec_state_cpu;
-    nvjpegJpegState_t dec_state_gpu;
-    nvjpegBufferPinned_t pinned_buffers[pipeline_stages];
-    nvjpegBufferDevice_t device_buffer;
-    nvjpegJpegStream_t  jpeg_streams[pipeline_stages];
-    nvjpegDecodeParams_t nvjpeg_decode_params;
-    nvjpegJpegDecoder_t nvjpeg_dec_cpu;
-    nvjpegJpegDecoder_t nvjpeg_dec_gpu;
+    nvjpegJpegState_t decStateCpu;
+    nvjpegJpegState_t decStateGpu;
+    nvjpegBufferPinned_t pinnedBuffers[PIPELINE_STAGES];
+    nvjpegBufferDevice_t deviceBuffer;
+    nvjpegJpegStream_t  jpegStreams[PIPELINE_STAGES];
+    nvjpegDecodeParams_t nvjpegDecodeParams;
+    nvjpegJpegDecoder_t nvjpegDecCpu;
+    nvjpegJpegDecoder_t nvjpegDecGpu;
 };
 
 
 // here have two optimization point
 // 1. support NVJPEG_BACKEND_HARDWARE. if use A100, A30, H100. I don't have money!
-class CniaiNvjpegDecoder {
+class NvjpegDecoder {
 
 public:
-    explicit CniaiNvjpegDecoder(size_t thread_pool_count);
-    ~CniaiNvjpegDecoder();
+    explicit NvjpegDecoder(size_t threadPoolCount);
+    ~NvjpegDecoder();
 
 private:
-    bool hw_decode_available_{}; // support in the future, if necessary
+    bool hwDecodeAvailable{}; // support in the future, if necessary
 
-    ThreadPool workers_;
+    ThreadPool workers;
 
-    cudaStream_t global_stream_{};
+    cudaStream_t globalStream{};
 
-    nvjpegHandle_t nvjpeg_handle_{};
+    nvjpegHandle_t nvjpegHandle{};
 
-    std::vector<decode_per_thread_params> nvjpeg_per_thread_data_{};
+    std::vector<DecodePerThreadParams> nvjpegPerThreadData{};
 
-    nvjpegOutputFormat_t default_output_format_ = NVJPEG_OUTPUT_RGBI;
+    nvjpegOutputFormat_t defaultOutputFormat = NVJPEG_OUTPUT_RGBI;
 
 public:
-    std::shared_ptr<CniaiNvjpegImage> DecodeJpeg(const uint8_t* src_jpeg, size_t length);
+    std::shared_ptr<NvjpegImage> decodeJpeg(const uint8_t *srcJpeg, size_t length);
 
-    std::shared_ptr<CniaiNvjpegImage> DecodeJpeg(const uint8_t *src_jpeg, size_t length, nvjpegOutputFormat_t output_format);
+    std::shared_ptr<NvjpegImage> decodeJpeg(const uint8_t *srcJpeg, size_t length, nvjpegOutputFormat_t outputFormat);
 
-    std::vector<std::shared_ptr<CniaiNvjpegImage>> DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, size_t image_count);
+    std::vector<std::shared_ptr<NvjpegImage>> decodeJpegBatch(const uint8_t *const *srcJpegs, const size_t *lengths, size_t imageCount);
 
-    std::vector<std::shared_ptr<CniaiNvjpegImage>> DecodeJpegBatch(const uint8_t *const *src_jpegs, const size_t *lengths, size_t image_count, nvjpegOutputFormat_t output_format);
+    std::vector<std::shared_ptr<NvjpegImage>> decodeJpegBatch(const uint8_t *const *srcJpegs, const size_t *lengths, size_t imageCount, nvjpegOutputFormat_t outputFormat);
 
-    void SetDefaultOutputFormat(nvjpegOutputFormat_t output_format);
+    void setDefaultOutputFormat(nvjpegOutputFormat_t outputFormat);
 
 private:
-    static int dev_malloc(void **p, size_t s);
+    static int devMalloc(void **p, size_t s);
 
-    static int dev_free(void *p);
+    static int devFree(void *p);
 
-    static int host_malloc(void** p, size_t s, unsigned int f);
+    static int hostMalloc(void** p, size_t s, unsigned int f);
 
-    static int host_free(void* p);
+    static int hostFree(void* p);
 
 };
+
 
 }
 

@@ -10,9 +10,12 @@
 namespace cniai {
 namespace file_util {
 
-std::ifstream::pos_type filesize(const char* filename);
+
+static std::ifstream::pos_type fileSize(const char* fileName);
+
 
 }
 }
+
 
 #endif //CNIAI_TESTS_FILE_UTIL_H

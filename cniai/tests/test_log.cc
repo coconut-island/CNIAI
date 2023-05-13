@@ -5,14 +5,16 @@
 #include "common/logging.h"
 #include <gflags/gflags.h>
 
-DEFINE_string(log_level, "trace", "Log level, includes [trace, debug, info, warn, err, critical, off]");
-DEFINE_string(log_pattern, "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%t] [%@] %v", "Log pattern");
+
+DEFINE_string(LOG_LEVEL, "trace", "Log level, includes [trace, debug, info, warn, err, critical, off]");
+DEFINE_string(LOG_PATTERN, "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%t] [%@] %v", "Log pattern");
+
 
 int main(int argc, char *argv[]) {
     gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-    SET_LOG_PATTERN(FLAGS_log_pattern);
-    SET_LOG_LEVEL(FLAGS_log_level);
+    SET_LOG_PATTERN(FLAGS_LOG_PATTERN);
+    SET_LOG_LEVEL(FLAGS_LOG_LEVEL);
 
     LOG_TRACE("{}", "TRACE");
     LOG_DEBUG("{}", "DEBUG");
