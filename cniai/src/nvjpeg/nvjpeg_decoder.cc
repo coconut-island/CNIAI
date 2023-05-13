@@ -109,7 +109,7 @@ NvjpegDecoder::~NvjpegDecoder() {
     for (auto &nvjpegData : nvjpegPerThreadData) {
         CHECK_NVJPEG(nvjpegDecodeParamsDestroy(nvjpegData.nvjpegDecodeParams))
 
-        for(int i = 0; i < PIPELINE_STAGES; i++) {
+        for (int i = 0; i < PIPELINE_STAGES; i++) {
             CHECK_NVJPEG(nvjpegJpegStreamDestroy(nvjpegData.jpegStreams[i]))
             CHECK_NVJPEG(nvjpegBufferPinnedDestroy(nvjpegData.pinnedBuffers[i]))
         }
