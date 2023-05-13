@@ -58,8 +58,8 @@ int main(int argc, char *argv[]) {
     assert(decodedYu12Img != nullptr);
     int yu12Width = decodedYu12Img->getWidth();
     int yu12Height = decodedYu12Img->getHeight();
-    auto yu12hostPtr = static_cast<const unsigned char *>(decodedYu12Img->getHostDataPtr());
-    cniai::image_util::writeYU12(FLAGS_OUTPUT_YU12_BMP_PATH.c_str(), yu12hostPtr, yu12Width, yu12Height);
+    auto yu12HostPtr = static_cast<const unsigned char *>(decodedYu12Img->getHostDataPtr());
+    cniai::image_util::writeYU12(FLAGS_OUTPUT_YU12_BMP_PATH.c_str(), yu12HostPtr, yu12Width, yu12Height);
 
     gflags::ShutDownCommandLineFlags();
     return 0;
