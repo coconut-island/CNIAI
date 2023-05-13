@@ -16,9 +16,9 @@ int main() {
     int imgHeight = 3;
     size_t imgSize = imgWidth * imgHeight * 3 * sizeof(uint8_t);
 
-    void* srcHostImg;
+    void *srcHostImg;
     cudaMallocHost(&srcHostImg, imgSize);
-    void* srcDeviceImg;
+    void *srcDeviceImg;
     cudaMalloc(&srcDeviceImg, imgSize);
 
     auto* srcHostImgUint8 = (uint8_t*)srcHostImg;
@@ -36,10 +36,10 @@ int main() {
 
     std::cout << std::endl << std::endl;
 
-    void* dstHostImg;
+    void *dstHostImg;
     cudaMallocHost(&dstHostImg, imgSize);
 
-    void* dstDeviceImg;
+    void *dstDeviceImg;
     cudaMalloc(&dstDeviceImg, imgSize);
     cudaMemset(dstDeviceImg, 0, imgSize);
 
@@ -49,7 +49,7 @@ int main() {
 
     cudaMemcpy(dstHostImg, dstDeviceImg, imgSize, cudaMemcpyDeviceToHost);
 
-    auto* dstHostImgUint8 = (uint8_t*)dstHostImg;
+    auto *dstHostImgUint8 = (uint8_t*)dstHostImg;
     for (int i = 0; i < imgSize; ++i) {
         if (i % (imgWidth * 3) == 0 && i != 0) {
             std::cout << std::endl;

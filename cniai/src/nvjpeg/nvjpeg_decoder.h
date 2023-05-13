@@ -2,8 +2,8 @@
 // Created by abel on 23-2-12.
 //
 
-#ifndef CNIAI_CNIAI_NVJPEG_H
-#define CNIAI_CNIAI_NVJPEG_H
+#ifndef CNIAI_NVJPEG_H
+#define CNIAI_NVJPEG_H
 
 #include <nvjpeg.h>
 #include <memory>
@@ -82,4 +82,4 @@ private:
 }
 
 
-#endif //CNIAI_CNIAI_NVJPEG_H
+#endif //CNIAI_NVJPEG_H

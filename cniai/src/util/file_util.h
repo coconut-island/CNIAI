@@ -2,8 +2,8 @@
 // Created by abel on 23-2-18.
 //
 
-#ifndef CNIAI_TESTS_FILE_UTIL_H
-#define CNIAI_TESTS_FILE_UTIL_H
+#ifndef CNIAI_FILE_UTIL_H
+#define CNIAI_FILE_UTIL_H
 
 #include <fstream>
 
@@ -18,4 +18,4 @@ static std::ifstream::pos_type fileSize(const char* fileName);
 }
 
 
-#endif //CNIAI_TESTS_FILE_UTIL_H
+#endif //CNIAI_FILE_UTIL_H

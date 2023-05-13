@@ -1,8 +1,8 @@
 //
 // Created by abel on 23-2-15.
 //
-#ifndef CNIAI_TESTS_CNIAI_LOG_H
-#define CNIAI_TESTS_CNIAI_LOG_H
+#ifndef CNIAI_LOG_H
+#define CNIAI_LOG_H
 
 #define SPDLOG_ACTIVE_LEVEL SPDLOG_LEVEL_TRACE
 
@@ -63,4 +63,4 @@ inline spdlog::level::level_enum getLogLevelEnumFromName(const std::string &leve
 }
 
 
-#endif //CNIAI_TESTS_CNIAI_LOG_H
+#endif //CNIAI_LOG_H
