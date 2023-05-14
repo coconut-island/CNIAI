@@ -21,7 +21,7 @@ int main() {
     void *srcDeviceImg;
     cudaMalloc(&srcDeviceImg, imgSize);
 
-    auto* srcHostImgUint8 = (uint8_t*)srcHostImg;
+    auto *srcHostImgUint8 = (uint8_t*)srcHostImg;
     for (int i = 0; i < imgSize; ++i) {
         srcHostImgUint8[i] = i % 3 + 1;
         if ((i % 3) == 0 && i != 0) {

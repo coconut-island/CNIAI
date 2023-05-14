@@ -25,5 +25,5 @@ aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src/util SRCS)
 
 include(cmake/install_dependencies.cmake)
 
-add_executable(cniai src/cniai.cc ${SRCS})
+add_executable(cniai src/cniai.cc ${SRCS} src/common/cuda_util.h src/common/nvjpeg_util.h)
 target_link_libraries(cniai PRIVATE ${CUDA_LIBS} ${TENSORRT_LIBS} ${GFLAGS_LIBRARIES})

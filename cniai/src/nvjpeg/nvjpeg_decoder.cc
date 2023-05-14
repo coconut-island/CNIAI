@@ -3,8 +3,12 @@
 //
 
 #include "nvjpeg_decoder.h"
+#include "common/cuda_util.h"
+#include "common/nvjpeg_util.h"
+#include "common/logging.h"
 
 #include <iostream>
+#include <cassert>
 
 
 namespace cniai {
@@ -53,9 +57,9 @@ bool pickGpuBackend(nvjpegJpegStream_t &jpegStream) {
     unsigned int frameWidth,frameHeight;
     nvjpegChromaSubsampling_t chromaSubsampling;
 
-    CHECK_NVJPEG(nvjpegJpegStreamGetFrameDimensions(jpegStream,
-                                                    &frameWidth, &frameHeight))
-    CHECK_NVJPEG(nvjpegJpegStreamGetChromaSubsampling(jpegStream,&chromaSubsampling))
+    NVJPEG_CHECK(nvjpegJpegStreamGetFrameDimensions(jpegStream,
+                                                    &frameWidth, &frameHeight));
+    NVJPEG_CHECK(nvjpegJpegStreamGetChromaSubsampling(jpegStream,&chromaSubsampling));
     auto scaleFactor = getScaleFactor(chromaSubsampling);
 
     bool useGpuBackend = false;
@@ -71,12 +75,12 @@ NvjpegDecoder::NvjpegDecoder(size_t threadPoolCount)
     : workers(threadPoolCount) {
     assert(threadPoolCount > 0);
 
-    CHECK_CUDA(cudaStreamCreateWithFlags(&globalStream, cudaStreamNonBlocking))
+    CUDA_CHECK(cudaStreamCreateWithFlags(&globalStream, cudaStreamNonBlocking));
 
     nvjpegDevAllocator_t devAllocator = {&devMalloc, &devFree};
     nvjpegPinnedAllocator_t pinnedAllocator ={&hostMalloc, &hostFree};
-    CHECK_NVJPEG(nvjpegCreateEx(NVJPEG_BACKEND_DEFAULT, &devAllocator,
-                                           &pinnedAllocator,NVJPEG_FLAGS_DEFAULT,  &nvjpegHandle))
+    NVJPEG_CHECK(nvjpegCreateEx(NVJPEG_BACKEND_DEFAULT, &devAllocator,
+                                           &pinnedAllocator,NVJPEG_FLAGS_DEFAULT,  &nvjpegHandle));
 
     nvjpegPerThreadData.resize(threadPoolCount);
 
@@ -84,47 +88,47 @@ NvjpegDecoder::NvjpegDecoder(size_t threadPoolCount)
                                        "so the re-allocations won't interfere with asynchronous execution.");
     for (auto &nvjpegData : nvjpegPerThreadData) {
         // stream for decoding
-        CHECK_CUDA( cudaStreamCreateWithFlags(&nvjpegData.stream, cudaStreamNonBlocking))
+        CUDA_CHECK(cudaStreamCreateWithFlags(&nvjpegData.stream, cudaStreamNonBlocking));
 
-        CHECK_NVJPEG(nvjpegDecoderCreate(nvjpegHandle, NVJPEG_BACKEND_HYBRID, &nvjpegData.nvjpegDecCpu))
-        CHECK_NVJPEG(nvjpegDecoderCreate(nvjpegHandle, NVJPEG_BACKEND_GPU_HYBRID, &nvjpegData.nvjpegDecGpu))
-        CHECK_NVJPEG(nvjpegDecoderStateCreate(nvjpegHandle, nvjpegData.nvjpegDecCpu, &nvjpegData.decStateCpu))
-        CHECK_NVJPEG(nvjpegDecoderStateCreate(nvjpegHandle, nvjpegData.nvjpegDecGpu, &nvjpegData.decStateGpu))
+        NVJPEG_CHECK(nvjpegDecoderCreate(nvjpegHandle, NVJPEG_BACKEND_HYBRID, &nvjpegData.nvjpegDecCpu));
+        NVJPEG_CHECK(nvjpegDecoderCreate(nvjpegHandle, NVJPEG_BACKEND_GPU_HYBRID, &nvjpegData.nvjpegDecGpu));
+        NVJPEG_CHECK(nvjpegDecoderStateCreate(nvjpegHandle, nvjpegData.nvjpegDecCpu, &nvjpegData.decStateCpu));
+        NVJPEG_CHECK(nvjpegDecoderStateCreate(nvjpegHandle, nvjpegData.nvjpegDecGpu, &nvjpegData.decStateGpu));
 
-        CHECK_NVJPEG(nvjpegBufferDeviceCreate(nvjpegHandle, nullptr, &nvjpegData.deviceBuffer))
+        NVJPEG_CHECK(nvjpegBufferDeviceCreate(nvjpegHandle, nullptr, &nvjpegData.deviceBuffer));
 
         for (int i = 0; i < PIPELINE_STAGES; i++) {
-            CHECK_NVJPEG(nvjpegBufferPinnedCreate(nvjpegHandle, nullptr, &nvjpegData.pinnedBuffers[i]))
-            CHECK_NVJPEG(nvjpegJpegStreamCreate(nvjpegHandle, &nvjpegData.jpegStreams[i]))
+            NVJPEG_CHECK(nvjpegBufferPinnedCreate(nvjpegHandle, nullptr, &nvjpegData.pinnedBuffers[i]));
+            NVJPEG_CHECK(nvjpegJpegStreamCreate(nvjpegHandle, &nvjpegData.jpegStreams[i]));
         }
-        CHECK_NVJPEG(nvjpegDecodeParamsCreate(nvjpegHandle, &nvjpegData.nvjpegDecodeParams))
+        NVJPEG_CHECK(nvjpegDecodeParamsCreate(nvjpegHandle, &nvjpegData.nvjpegDecodeParams));
 
-        CHECK_NVJPEG(nvjpegStateAttachDeviceBuffer(nvjpegData.decStateCpu, nvjpegData.deviceBuffer))
-        CHECK_NVJPEG(nvjpegStateAttachDeviceBuffer(nvjpegData.decStateGpu, nvjpegData.deviceBuffer))
+        NVJPEG_CHECK(nvjpegStateAttachDeviceBuffer(nvjpegData.decStateCpu, nvjpegData.deviceBuffer));
+        NVJPEG_CHECK(nvjpegStateAttachDeviceBuffer(nvjpegData.decStateGpu, nvjpegData.deviceBuffer));
     }
 
 }
 
 NvjpegDecoder::~NvjpegDecoder() {
     for (auto &nvjpegData : nvjpegPerThreadData) {
-        CHECK_NVJPEG(nvjpegDecodeParamsDestroy(nvjpegData.nvjpegDecodeParams))
+        NVJPEG_CHECK(nvjpegDecodeParamsDestroy(nvjpegData.nvjpegDecodeParams));
 
         for (int i = 0; i < PIPELINE_STAGES; i++) {
-            CHECK_NVJPEG(nvjpegJpegStreamDestroy(nvjpegData.jpegStreams[i]))
-            CHECK_NVJPEG(nvjpegBufferPinnedDestroy(nvjpegData.pinnedBuffers[i]))
+            NVJPEG_CHECK(nvjpegJpegStreamDestroy(nvjpegData.jpegStreams[i]));
+            NVJPEG_CHECK(nvjpegBufferPinnedDestroy(nvjpegData.pinnedBuffers[i]));
         }
-        CHECK_NVJPEG(nvjpegBufferDeviceDestroy(nvjpegData.deviceBuffer))
-        CHECK_NVJPEG(nvjpegJpegStateDestroy(nvjpegData.decStateCpu))
-        CHECK_NVJPEG(nvjpegJpegStateDestroy(nvjpegData.decStateGpu))
-        CHECK_NVJPEG(nvjpegDecoderDestroy(nvjpegData.nvjpegDecCpu))
-        CHECK_NVJPEG(nvjpegDecoderDestroy(nvjpegData.nvjpegDecGpu))
+        NVJPEG_CHECK(nvjpegBufferDeviceDestroy(nvjpegData.deviceBuffer));
+        NVJPEG_CHECK(nvjpegJpegStateDestroy(nvjpegData.decStateCpu));
+        NVJPEG_CHECK(nvjpegJpegStateDestroy(nvjpegData.decStateGpu));
+        NVJPEG_CHECK(nvjpegDecoderDestroy(nvjpegData.nvjpegDecCpu));
+        NVJPEG_CHECK(nvjpegDecoderDestroy(nvjpegData.nvjpegDecGpu));
 
-        CHECK_CUDA(cudaStreamDestroy(nvjpegData .stream))
+        CUDA_CHECK(cudaStreamDestroy(nvjpegData .stream));
     }
 
-    CHECK_NVJPEG(nvjpegDestroy(nvjpegHandle))
+    NVJPEG_CHECK(nvjpegDestroy(nvjpegHandle));
 
-    CHECK_CUDA(cudaStreamDestroy(globalStream))
+    CUDA_CHECK(cudaStreamDestroy(globalStream));
 }
 
 
@@ -168,9 +172,9 @@ std::vector<std::shared_ptr<NvjpegImage>> NvjpegDecoder::decodeJpegBatch(const u
     int channels;
     nvjpegChromaSubsampling_t subsampling;
     for (int i = 0; i < imageCount; ++i) {
-        CHECK_NVJPEG(nvjpegGetImageInfo(
+        NVJPEG_CHECK(nvjpegGetImageInfo(
                 nvjpegHandle, const_cast<unsigned char *>(srcJpegs[i]), lengths[i],
-                &channels, &subsampling, singleImgWidths, singleImgHeights))
+                &channels, &subsampling, singleImgWidths, singleImgHeights));
 
         imgWidths[i] = singleImgWidths[0];
         imgHeights[i] = singleImgHeights[0];
@@ -230,9 +234,9 @@ std::vector<std::shared_ptr<NvjpegImage>> NvjpegDecoder::decodeJpegBatch(const u
             iouts[i].pitch[c] = aw;
             if (sz > iszs[i].pitch[c]) {
                 if (iouts[i].channel[c]) {
-                    CHECK_CUDA(cudaFree(iouts[i].channel[c]))
+                    CUDA_CHECK(cudaFree(iouts[i].channel[c]));
                 }
-                CHECK_CUDA(cudaMalloc((void**)&iouts[i].channel[c], sz))
+                CUDA_CHECK(cudaMalloc((void**)&iouts[i].channel[c], sz));
                 iszs[i].pitch[c] = sz;
             }
         }
@@ -249,32 +253,32 @@ std::vector<std::shared_ptr<NvjpegImage>> NvjpegDecoder::decodeJpegBatch(const u
                          {
                              auto& perThreadParams = _nvjpegPerThreadData[threadIdx];
 
-                             CHECK_NVJPEG(nvjpegDecodeParamsSetOutputFormat(perThreadParams.nvjpegDecodeParams, outputFormat))
-                             CHECK_NVJPEG(nvjpegJpegStreamParse(_nvjpegHandle, srcJpegs[iIdx], lengths[iIdx],
-                                                                0, 0, perThreadParams.jpegStreams[bufferIndices[threadIdx]]))
+                             NVJPEG_CHECK(nvjpegDecodeParamsSetOutputFormat(perThreadParams.nvjpegDecodeParams, outputFormat));
+                             NVJPEG_CHECK(nvjpegJpegStreamParse(_nvjpegHandle, srcJpegs[iIdx], lengths[iIdx],
+                                                                0, 0, perThreadParams.jpegStreams[bufferIndices[threadIdx]]));
                              bool useGpuBackend = pickGpuBackend(perThreadParams.jpegStreams[bufferIndices[threadIdx]]);
 
                              nvjpegJpegDecoder_t &decoder       = useGpuBackend ? perThreadParams.nvjpegDecGpu : perThreadParams.nvjpegDecCpu;
                              nvjpegJpegState_t   &decoderState  = useGpuBackend ? perThreadParams.decStateGpu  : perThreadParams.decStateCpu;
 
-                             CHECK_NVJPEG(nvjpegStateAttachPinnedBuffer(decoderState,
-                                                                        perThreadParams.pinnedBuffers[bufferIndices[threadIdx]]))
+                             NVJPEG_CHECK(nvjpegStateAttachPinnedBuffer(decoderState,
+                                                                        perThreadParams.pinnedBuffers[bufferIndices[threadIdx]]));
 
-                             CHECK_NVJPEG(nvjpegDecodeJpegHost(_nvjpegHandle, decoder, decoderState,
-                                                               perThreadParams.nvjpegDecodeParams, perThreadParams.jpegStreams[bufferIndices[threadIdx]]))
+                             NVJPEG_CHECK(nvjpegDecodeJpegHost(_nvjpegHandle, decoder, decoderState,
+                                                               perThreadParams.nvjpegDecodeParams, perThreadParams.jpegStreams[bufferIndices[threadIdx]]));
 
-                             CHECK_CUDA(cudaStreamSynchronize(perThreadParams.stream))
+                             CUDA_CHECK(cudaStreamSynchronize(perThreadParams.stream));
 
-                             CHECK_NVJPEG(nvjpegDecodeJpegTransferToDevice(_nvjpegHandle, decoder, decoderState,
-                                                                           perThreadParams.jpegStreams[bufferIndices[threadIdx]], perThreadParams.stream))
+                             NVJPEG_CHECK(nvjpegDecodeJpegTransferToDevice(_nvjpegHandle, decoder, decoderState,
+                                                                           perThreadParams.jpegStreams[bufferIndices[threadIdx]], perThreadParams.stream));
 
-                             CHECK_NVJPEG(nvjpegDecodeJpegDevice(_nvjpegHandle, decoder, decoderState,
-                                                                 &iouts[iIdx], perThreadParams.stream))
+                             NVJPEG_CHECK(nvjpegDecodeJpegDevice(_nvjpegHandle, decoder, decoderState,
+                                                                 &iouts[iIdx], perThreadParams.stream));
 
                              // switch pinned buffer in pipeline mode to avoid an extra sync
                              bufferIndices[threadIdx] = (bufferIndices[threadIdx] + 1) % PIPELINE_STAGES;
 
-                             CHECK_CUDA(cudaStreamSynchronize(perThreadParams.stream))
+                             CUDA_CHECK(cudaStreamSynchronize(perThreadParams.stream));
 
 
                              auto iout = iouts[iIdx];

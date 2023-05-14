@@ -9,8 +9,6 @@
 #include <memory>
 #include <vector>
 
-#include "common/common.h"
-#include "common/logging.h"
 #include "common/thread_pool.h"
 
 #include "nvjpeg_image.h"

@@ -4,6 +4,7 @@
 #include "common/logging.h"
 #include <gflags/gflags.h>
 
+
 DEFINE_string(LOG_LEVEL, "info", "Log level, includes [trace, debug, info, warn, err, critical, off]");
 DEFINE_string(LOG_PATTERN, "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%t] [%@] %v", "Log pattern");
 

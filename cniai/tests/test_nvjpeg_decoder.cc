@@ -6,6 +6,7 @@
 
 #include "nvjpeg/nvjpeg_decoder.h"
 #include "util/image_util.h"
+#include "common/logging.h"
 
 #include <gflags/gflags.h>
 
