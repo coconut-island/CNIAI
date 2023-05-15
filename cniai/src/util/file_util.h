@@ -11,7 +11,7 @@ namespace cniai {
 namespace file_util {
 
 
-static std::ifstream::pos_type fileSize(const char* fileName);
+std::ifstream::pos_type fileSize(const char* fileName);
 
 
 }
