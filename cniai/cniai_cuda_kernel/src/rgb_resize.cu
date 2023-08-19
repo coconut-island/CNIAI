@@ -15,8 +15,8 @@ __global__ void rgbResizeBilinearKernel(const uint8_t *src, uint8_t *dst,
                                         const int srcWidth, const int srcHeight,
                                         const int dstWidth, const int dstHeight,
                                         const float scaleX, const float scaleY) {
-    const int dstX = blockIdx.x * blockDim.x + threadIdx.x;
-    const int dstY = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int dstX = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int dstY = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (dstX >= dstWidth || dstY >= dstHeight)
         return;

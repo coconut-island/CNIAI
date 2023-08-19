@@ -18,8 +18,8 @@ __global__ void rgbResizeBilinearPadKernel(const uint8_t *src, uint8_t *dst,
                                            const int imgX, const int imgY,
                                            const int pad0, const int pad1, const int pad2,
                                            const float scaleX, const float scaleY) {
-    const int dstX = blockIdx.x * blockDim.x + threadIdx.x;
-    const int dstY = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int dstX = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int dstY = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (dstX >= dstWidth || dstY >= dstHeight)
         return;

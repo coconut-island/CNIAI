@@ -10,11 +10,11 @@ namespace preprocess {
 
 
 __global__ void rgbPackedPlanarSwapKernel(const char * src, char* dst, const int width, const int height) {
-    int x = threadIdx.x + blockIdx.x * blockDim.x;
-    int y = threadIdx.y + blockIdx.y * blockDim.y;
+    unsigned int x = threadIdx.x + blockIdx.x * blockDim.x;
+    unsigned int y = threadIdx.y + blockIdx.y * blockDim.y;
     if (x < width && y < height) {
-        int srcIdx = (x + y * width) * 3;
-        int dstIdx = x + y * width;
+        unsigned int srcIdx = (x + y * width) * 3;
+        unsigned int dstIdx = x + y * width;
         dst[dstIdx + 0 * width * height] = src[srcIdx + 0];
         dst[dstIdx + 1 * width * height] = src[srcIdx + 1];
         dst[dstIdx + 2 * width * height] = src[srcIdx + 2];

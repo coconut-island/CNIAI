@@ -21,8 +21,8 @@ __global__ void rgbResizeBilinearPadNormKernel(const uint8_t *src, float *dst,
                                                const float mean0, const float mean1, const float mean2,
                                                const float std0, const float std1, const float std2,
                                                const float scaleX, const float scaleY) {
-    const int dstX = blockIdx.x * blockDim.x + threadIdx.x;
-    const int dstY = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned int dstX = blockIdx.x * blockDim.x + threadIdx.x;
+    const unsigned int dstY = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (dstX >= dstWidth || dstY >= dstHeight)
         return;
