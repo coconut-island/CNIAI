@@ -14,10 +14,10 @@ namespace cniai {
 
 
 NvjpegImage::NvjpegImage(void * deviceChannelPtrs[NVJPEG_MAX_COMPONENT], int width, int height, nvjpegOutputFormat_t format)
-        : width(width), height(height) {
+        : mWidth(width), mHeight(height) {
 
     for (int i = 0; i < NVJPEG_MAX_COMPONENT; ++i) {
-        this->deviceChannelPtrs[i] = deviceChannelPtrs[i];
+        this->mDeviceChannelPtrs[i] = deviceChannelPtrs[i];
     }
 
     switch (format) {
@@ -27,7 +27,7 @@ NvjpegImage::NvjpegImage(void * deviceChannelPtrs[NVJPEG_MAX_COMPONENT], int wid
         case NVJPEG_OUTPUT_BGR:
         case NVJPEG_OUTPUT_YUV:
         case NVJPEG_OUTPUT_Y:
-            this->format = format;
+            this->mFormat = format;
             break;
         case NVJPEG_OUTPUT_UNCHANGED:
         default:
@@ -37,80 +37,80 @@ NvjpegImage::NvjpegImage(void * deviceChannelPtrs[NVJPEG_MAX_COMPONENT], int wid
 }
 
 NvjpegImage::~NvjpegImage() {
-    for (auto &c : deviceChannelPtrs) {
+    for (auto &c : mDeviceChannelPtrs) {
         if (c) CUDA_CHECK(cudaFree(c));
     }
 
-    if (hostDataPtr) {
-        CUDA_CHECK(cudaFreeHost(hostDataPtr));
+    if (mHostDataPtr) {
+        CUDA_CHECK(cudaFreeHost(mHostDataPtr));
     }
 }
 
 void* NvjpegImage::getDeviceChannelPtr(int idx) {
-    return deviceChannelPtrs[idx];
+    return mDeviceChannelPtrs[idx];
 }
 
 void* NvjpegImage::getHostDataPtr() {
-    if (hostDataPtr) {
-        return hostDataPtr;
+    if (mHostDataPtr) {
+        return mHostDataPtr;
     }
 
-    CUDA_CHECK(cudaMallocHost(&hostDataPtr, size()));
+    CUDA_CHECK(cudaMallocHost(&mHostDataPtr, size()));
 
-    switch (format) {
+    switch (mFormat) {
         case NVJPEG_OUTPUT_RGBI:
         case NVJPEG_OUTPUT_BGRI:
-            CUDA_CHECK(cudaMemcpy(hostDataPtr, getDeviceChannelPtr(0), size(), cudaMemcpyDeviceToHost));
+            CUDA_CHECK(cudaMemcpy(mHostDataPtr, getDeviceChannelPtr(0), size(), cudaMemcpyDeviceToHost));
             break;
         case NVJPEG_OUTPUT_RGB:
         case NVJPEG_OUTPUT_BGR:
-            CUDA_CHECK(cudaMemcpy(hostDataPtr,
-                                  getDeviceChannelPtr(0),width * height * sizeof(uint8_t), cudaMemcpyDeviceToHost));
-            CUDA_CHECK(cudaMemcpy(static_cast<uint8_t*>(hostDataPtr) + width * height * sizeof(uint8_t),
-                                  getDeviceChannelPtr(1),width * height * sizeof(uint8_t), cudaMemcpyDeviceToHost));
-            CUDA_CHECK(cudaMemcpy(static_cast<uint8_t*>(hostDataPtr) + width * height * sizeof(uint8_t),
-                                  getDeviceChannelPtr(2), width * height * sizeof(uint8_t), cudaMemcpyDeviceToHost));
+            CUDA_CHECK(cudaMemcpy(mHostDataPtr,
+                                  getDeviceChannelPtr(0),mWidth * mHeight * sizeof(uint8_t), cudaMemcpyDeviceToHost));
+            CUDA_CHECK(cudaMemcpy(static_cast<uint8_t*>(mHostDataPtr) + mWidth * mHeight * sizeof(uint8_t),
+                                  getDeviceChannelPtr(1),mWidth * mHeight * sizeof(uint8_t), cudaMemcpyDeviceToHost));
+            CUDA_CHECK(cudaMemcpy(static_cast<uint8_t*>(mHostDataPtr) + mWidth * mHeight * sizeof(uint8_t),
+                                  getDeviceChannelPtr(2), mWidth * mHeight * sizeof(uint8_t), cudaMemcpyDeviceToHost));
             break;
         case NVJPEG_OUTPUT_YUV:
-            CUDA_CHECK(cudaMemcpy(hostDataPtr, getDeviceChannelPtr(0),
-                                  width * height * sizeof(uint8_t), cudaMemcpyDeviceToHost));
-            CUDA_CHECK(cudaMemcpy(static_cast<uint8_t*>(hostDataPtr) + width * height * sizeof(uint8_t), getDeviceChannelPtr(1),
-                                  width * height / 4 * sizeof(uint8_t), cudaMemcpyDeviceToHost));
-            CUDA_CHECK(cudaMemcpy(static_cast<uint8_t*>(hostDataPtr) + width * height * 5 / 4 * sizeof(uint8_t), getDeviceChannelPtr(2),
-                                  width * height / 4 * sizeof(uint8_t), cudaMemcpyDeviceToHost));
+            CUDA_CHECK(cudaMemcpy(mHostDataPtr, getDeviceChannelPtr(0),
+                                  mWidth * mHeight * sizeof(uint8_t), cudaMemcpyDeviceToHost));
+            CUDA_CHECK(cudaMemcpy(static_cast<uint8_t*>(mHostDataPtr) + mWidth * mHeight * sizeof(uint8_t), getDeviceChannelPtr(1),
+                                  mWidth * mHeight / 4 * sizeof(uint8_t), cudaMemcpyDeviceToHost));
+            CUDA_CHECK(cudaMemcpy(static_cast<uint8_t*>(mHostDataPtr) + mWidth * mHeight * 5 / 4 * sizeof(uint8_t), getDeviceChannelPtr(2),
+                                  mWidth * mHeight / 4 * sizeof(uint8_t), cudaMemcpyDeviceToHost));
             break;
         default:
-            LOG_ERROR("not support the format! format = {}", static_cast<int>(format));
+            LOG_ERROR("not support the format! format = {}", static_cast<int>(mFormat));
             abort();
     }
-    return hostDataPtr;
+    return mHostDataPtr;
 }
 
 int NvjpegImage::getWidth() const {
-    return width;
+    return mWidth;
 }
 
 int NvjpegImage::getHeight() const {
-    return height;
+    return mHeight;
 }
 
 nvjpegOutputFormat_t NvjpegImage::getFormat() {
-    return format;
+    return mFormat;
 }
 
 size_t NvjpegImage::size() {
-    switch (format) {
+    switch (mFormat) {
         case NVJPEG_OUTPUT_RGBI:
         case NVJPEG_OUTPUT_BGRI:
         case NVJPEG_OUTPUT_RGB:
         case NVJPEG_OUTPUT_BGR:
-            return width * height * 3 * sizeof(uint8_t);
+            return mWidth * mHeight * 3 * sizeof(uint8_t);
         case NVJPEG_OUTPUT_YUV:
-            return width * height * 3 / 2 * sizeof(uint8_t);
+            return mWidth * mHeight * 3 / 2 * sizeof(uint8_t);
         case NVJPEG_OUTPUT_Y:
-            return width * height;
+            return mWidth * mHeight;
         default:
-            LOG_ERROR("not support the format to cal size! return size 0, format = {}", static_cast<int>(format));
+            LOG_ERROR("not support the format to cal size! return size 0, format = {}", static_cast<int>(mFormat));
             abort();
     }
 }

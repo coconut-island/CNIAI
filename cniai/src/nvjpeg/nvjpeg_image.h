@@ -19,11 +19,11 @@ public:
     ~NvjpegImage();
 
 private:
-    void *deviceChannelPtrs[NVJPEG_MAX_COMPONENT]{nullptr};
-    void *hostDataPtr = nullptr;
-    int width{};
-    int height{};
-    nvjpegOutputFormat_t format{};
+    void *mDeviceChannelPtrs[NVJPEG_MAX_COMPONENT]{nullptr};
+    void *mHostDataPtr = nullptr;
+    int mWidth{};
+    int mHeight{};
+    nvjpegOutputFormat_t mFormat{};
 
 public:
     void *getDeviceChannelPtr(int idx);

@@ -42,17 +42,17 @@ public:
     ~NvjpegDecoder();
 
 private:
-    bool hwDecodeAvailable{}; // support in the future, if necessary
+    bool mHwDecodeAvailable{}; // support in the future, if necessary
 
-    ThreadPool workers;
+    ThreadPool mWorkers;
 
-    cudaStream_t globalStream{};
+    cudaStream_t mGlobalStream{};
 
-    nvjpegHandle_t nvjpegHandle{};
+    nvjpegHandle_t mNvjpegHandle{};
 
-    std::vector<DecodePerThreadParams> nvjpegPerThreadData{};
+    std::vector<DecodePerThreadParams> mNvjpegPerThreadData{};
 
-    nvjpegOutputFormat_t defaultOutputFormat = NVJPEG_OUTPUT_RGBI;
+    nvjpegOutputFormat_t mDefaultOutputFormat = NVJPEG_OUTPUT_RGBI;
 
 public:
     std::shared_ptr<NvjpegImage> decodeJpeg(const uint8_t *srcJpeg, size_t length);
