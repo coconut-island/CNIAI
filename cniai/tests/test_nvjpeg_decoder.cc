@@ -14,7 +14,7 @@
 DEFINE_string(LOG_LEVEL, "trace", "Log level, includes [trace, debug, info, warn, err, critical, off]");
 DEFINE_string(LOG_PATTERN, "[%Y-%m-%d %H:%M:%S.%e] [%^%l%$] [%t] [%@] %v", "Log pattern");
 
-DEFINE_string(JPEG_PATH, "../../resources/1920x1080.jpg", "Input jpeg path.");
+DEFINE_string(JPEG_PATH, "../../resources/1920x1080_yu12.jpg", "Input jpeg path.");
 DEFINE_string(OUTPUT_RGBI_BMP_PATH, "./1920x1080_rgbi.bmp", "Output rgbi bmp path.");
 DEFINE_string(OUTPUT_YU12_BMP_PATH, "./1920x1080_yu12.bmp", "Output yu12 bmp path.");
 
